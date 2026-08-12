@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hypermemory-plugins",
+  "description": "HyperMemory plugins for Claude Code — persistent memory graph with automatic recall and background persistence",
+  "owner": {
+    "name": "HyperMemory",
+    "email": "info@iiwio.com"
+  },
+  "plugins": [
+    {
+      "name": "hypermemory",
+      "description": "Persistent memory graph — automatic recall on every turn, background persistence via sub-agent, full protocol skill",
+      "author": {
+        "name": "HyperMemory"
+      },
+      "category": "productivity",
+      "source": ".",
+      "homepage": "https://hypermemory.io"
+    }
+  ]
+}

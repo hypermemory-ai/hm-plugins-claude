@@ -1,0 +1,9 @@
+{
+  "name": "hypermemory",
+  "version": "0.1.0",
+  "description": "Persistent memory graph for AI agents — recall context, store facts and relationships, and maintain graph hygiene on every message via HyperMemory MCP",
+  "author": {
+    "name": "HyperMemory"
+  },
+  "keywords": ["memory", "knowledge-graph", "mcp", "recall", "persistence"]
+}

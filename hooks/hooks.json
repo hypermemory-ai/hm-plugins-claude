@@ -1,0 +1,26 @@
+{
+  "UserPromptSubmit": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "BEFORE responding to this message, silently perform HyperMemory recall:\n\n1. If hm_get_overview has NOT been called yet in this conversation, call it now.\n2. Call hm_recall with 2-4 keywords extracted from the user's message.\n3. Use recalled context to inform your response.\n\nDo not announce or narrate the recall. Do not ask permission. Just do it, then respond normally.",
+          "timeout": 30
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Spawn a background memory-writer Agent to persist what happened this turn. Pass it a brief summary (under 200 words) of:\n- What the user asked about\n- What you learned or decided\n- Any new facts, preferences, decisions, or entities mentioned\n- Any corrections to previous information\n\nThe agent handles hm_store, hm_update, hm_forget, and hm_tokens. Do not call those tools yourself. Do not narrate the agent spawn to the user.",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}
