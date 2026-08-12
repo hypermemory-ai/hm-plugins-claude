@@ -2,7 +2,7 @@
   "mcpServers": {
     "hypermemory": {
       "type": "http",
-      "url": "https://api.hypermemory.io/mcp"
+      "url": "https://stage.hypermemory.io/mcp"
     }
   }
 }
