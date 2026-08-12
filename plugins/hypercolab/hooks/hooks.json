@@ -1,0 +1,53 @@
+{
+  "description": "Load HyperColab context, protect claimed paths, and record structured development activity.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/scripts/hypercolab_hook.py",
+            "statusMessage": "Loading HyperColab project context",
+            "additionalContextLimit": 12000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/scripts/hypercolab_hook.py",
+            "statusMessage": "Checking HyperColab ownership",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/scripts/hypercolab_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/scripts/hypercolab_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

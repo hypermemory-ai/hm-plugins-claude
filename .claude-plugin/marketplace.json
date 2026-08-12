@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "hypermemory-plugins",
-  "description": "HyperMemory plugins for Claude Code — persistent memory graph with automatic recall and background persistence",
+  "description": "HyperMemory AI plugins for Claude Code — persistent memory and project coordination",
   "owner": {
     "name": "HyperMemory",
     "email": "info@iiwio.com"
@@ -9,12 +9,22 @@
   "plugins": [
     {
       "name": "hypermemory",
-      "description": "Persistent memory graph — automatic recall on every turn, background persistence via sub-agent, full protocol skill",
+      "description": "Persistent personal and project memory, relationship-aware recall, delegated background writes, timeline logging, and token telemetry",
       "author": {
-        "name": "HyperMemory"
+        "name": "HyperMemory AI"
       },
       "category": "productivity",
-      "source": ".",
+      "source": "./plugins/hypermemory",
+      "homepage": "https://hypermemory.io"
+    },
+    {
+      "name": "hypercolab",
+      "description": "Shared project context, work ownership, path claims, development timelines, and multi-agent collision prevention",
+      "author": {
+        "name": "HyperMemory AI"
+      },
+      "category": "developer-tools",
+      "source": "./plugins/hypercolab",
       "homepage": "https://hypermemory.io"
     }
   ]
