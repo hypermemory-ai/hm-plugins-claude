@@ -18,10 +18,10 @@
 
 > [!IMPORTANT]
 > This repository is the Git-backed development marketplace for Claude Code.
-> HyperMemory currently connects to the Rust staging MCP at
-> `https://stage.hypermemory.io/mcp`. Public, one-click installation for normal
-> Claude Code users requires separate publication through Anthropic's plugin
-> marketplace.
+> Both plugins currently connect to Rust staging MCPs at
+> `https://stage.hypermemory.io/mcp` and `https://stage.hypermemory.io/colab/mcp`.
+> Public, one-click installation for normal Claude Code users requires separate
+> publication through Anthropic's plugin marketplace.
 
 ## Contents
 
@@ -71,9 +71,9 @@ different problems and have different runtime boundaries:
 - **HyperMemory follows a person or agent across conversations.** It recalls
   durable context before work begins and maintains that context after each
   turn.
-- **HyperColab follows a Git project.** It resolves the active repository,
-  coordinates concurrent developers and coding agents, protects claimed paths,
-  and records a structured development timeline.
+- **HyperColab follows a Git project.** It coordinates concurrent developers
+  and coding agents, protects claimed paths, and records a structured
+  development timeline.
 
 Keeping them separate lets a user install durable memory without repository
 coordination, add coordination only where needed, or run both together.
@@ -82,8 +82,7 @@ coordination, add coordination only where needed, or run both together.
 
 | Capability | HyperMemory | HyperColab |
 | --- | :---: | :---: |
-| Hosted OAuth MCP | Yes | No |
-| Local stdio MCP shim | No | Yes |
+| Hosted OAuth MCP | Yes | Yes |
 | Bundled skill | Yes | Yes |
 | Claude Code lifecycle hooks | Yes | Yes |
 | Packaged sub-agent role contract | Memory writer | Coordination writer |
@@ -91,17 +90,16 @@ coordination, add coordination only where needed, or run both together.
 | Chronological timeline | Conversation and decision timeline | Development activity timeline |
 | Weighted activity segmentation | Yes | No |
 | Path claims and collision protection | No | Yes |
-| Git event capture | No | Optional |
 | Works without the other plugin | Yes | Yes |
 
 ## Supported surfaces
 
 | Surface | HyperMemory | HyperColab |
 | --- | --- | --- |
-| Claude Code CLI | Full behavior after MCP authorization and hook trust | Full behavior after CLI installation, login, plugin installation, and hook trust |
-| Claude Code Desktop app | Full behavior — shares plugin config with CLI | Supported when the local environment can launch `hypercolab` and access the repository |
-| Claude Desktop (Electron app) | MCP only — no hooks, agents, or skills; best-effort via CLAUDE.md | Skill can be tested; repository coordination requires a local process and Git checkout |
-| claude.ai (web) | MCP only — same limitations as Claude Desktop | Local Git claims and activity capture are unavailable |
+| Claude Code CLI | Full behavior after MCP authorization and hook trust | Full behavior after MCP authorization and hook trust |
+| Claude Code Desktop app | Full behavior — shares plugin config with CLI | Full behavior — shares plugin config with CLI |
+| Claude Desktop (Electron app) | MCP only — no hooks, agents, or skills; best-effort via CLAUDE.md | MCP only — same limitations as HyperMemory |
+| claude.ai (web) | MCP only — same limitations as Claude Desktop | MCP only — same limitations as Claude Desktop |
 
 ## Quick start
 
@@ -109,8 +107,6 @@ coordination, add coordination only where needed, or run both together.
 
 - Claude Code CLI or Claude Code Desktop app
 - A HyperMemory account
-- Git
-- Python 3.10 or newer and [`pipx`](https://pipx.pypa.io/) for HyperColab
 
 ### 1. Register the marketplace
 
@@ -136,16 +132,12 @@ Complete the HyperMemory OAuth flow when prompted, then start a new session.
 
 ### 3. Install HyperColab
 
-HyperColab needs its local CLI/MCP shim before Claude Code loads the plugin:
-
 ```bash
-pipx install "git+https://github.com/hypermemory-ai/hm-plugins-claude.git#subdirectory=packages/hypercolab-cli"
-hypercolab login
-hypercolab doctor
 /plugin install hypercolab
 ```
 
-Start a new session inside a Git repository that is enrolled in HyperColab.
+Complete the HyperColab OAuth flow when prompted, then start a new session
+inside a Git repository.
 
 ### 4. Review and trust hooks
 
@@ -163,7 +155,6 @@ exact hook definition, so changed hooks require review again after an update.
 
 ```bash
 /plugin list
-hypercolab status
 ```
 
 Try these prompts in a new session:
@@ -288,32 +279,10 @@ claims, structured activity, and project-scoped graph search.
 | Component | Path | Responsibility |
 | --- | --- | --- |
 | Plugin manifest | `plugins/hypercolab/.claude-plugin/plugin.json` | Identity, version, discovery metadata, and MCP declaration |
-| MCP registration | `plugins/hypercolab/.mcp.json` | Launches `hypercolab mcp` as a local stdio server |
+| MCP configuration | `plugins/hypercolab/.mcp.json` | Connects to the hosted Rust staging HyperColab MCP over HTTP |
 | Skill | `plugins/hypercolab/skills/hypercolab/` | Defines join, sync, claim, progress, activity, and completion behavior |
-| Lifecycle hooks | `plugins/hypercolab/hooks/hooks.json` | Loads project context, checks writes, and records structured activity |
+| Lifecycle hooks | `plugins/hypercolab/hooks/hooks.json` | Loads project context at session start, checks ownership before writes, and spawns coordination writer at stop |
 | Coordination-writer role | `plugins/hypercolab/agents/coordination-writer.md` | Bounded contract for delegated timeline maintenance |
-| Hook launcher | `plugins/hypercolab/scripts/hypercolab_hook.py` | Bridges Claude Code lifecycle events to the installed CLI and degrades safely if absent |
-
-### Why a local shim?
-
-HyperColab must know which repository the user is actually working in. The
-local shim derives the Git root, canonical remote, branch, and worktree before
-calling the project service. Agents do not select arbitrary graph or timeline
-database identifiers.
-
-```mermaid
-flowchart LR
-    Agent["Claude Code agent"] --> Plugin["HyperColab plugin"]
-    Plugin --> Shim["Local stdio MCP shim"]
-    Shim --> Git["Git root, remote, branch, worktree"]
-    Shim --> API["HyperColab API"]
-    API --> Claims["Sessions, claims, and leases"]
-    API --> Timeline["Append-only project timeline"]
-    API --> Graph["Project-scoped HyperMemory graph"]
-```
-
-This routing is a safety boundary: the backend resolves the authorized project
-from the authenticated developer and canonical repository identity.
 
 ### MCP tool reference
 
@@ -343,15 +312,25 @@ join -> sync -> claim -> check before writes -> update during work -> finish or 
 Live conflicts are not bypassed. If another session owns an overlapping path,
 the agent coordinates a handoff, waits for lease expiry, or changes scope.
 
-### Offline behavior
+### OAuth and credentials
 
-HyperColab treats coordination conservatively during an outage:
+The plugin connects to:
 
-- new path claims fail closed;
-- a previously approved cached lease is honored only until its server-issued
-  expiration;
-- Git activity is queued locally and retried later; and
-- repositories that are not registered with HyperColab remain unaffected.
+```text
+https://stage.hypermemory.io/colab/mcp
+```
+
+The server supports the same OAuth flow as HyperMemory: authorization-code
+with PKCE S256, refresh tokens, and dynamic client registration. The plugin
+package contains the server URL only; it does not contain or require a
+checked-in API key.
+
+### Data boundary
+
+HyperColab records structured summaries, repository-relative paths, commit
+identifiers, claims, statuses, test results, small metadata objects, and visible
+rationale summaries. By default it does not send raw source, raw diffs, full
+shell output, complete transcripts, or hidden model reasoning.
 
 ## Combined architecture
 
@@ -369,11 +348,10 @@ flowchart TB
     end
 
     subgraph ProjectCoordination["Project-scoped coordination"]
+        HC --> HCMCP["Hosted OAuth MCP"]
         HC --> HCSkill["Coordination skill"]
         HC --> HCHooks["Claim and activity hooks"]
         HC --> HCAgent["Coordination-writer role"]
-        HC --> LocalMCP["Local stdio MCP shim"]
-        LocalMCP --> ColabAPI["HyperColab project services"]
     end
 ```
 
@@ -397,11 +375,10 @@ repository-specific coordination state.
 │   │   └── skills/hypermemory/         # Memory workflow and references
 │   └── hypercolab/
 │       ├── .claude-plugin/plugin.json  # HyperColab manifest
-│       ├── .mcp.json                   # Local stdio MCP registration
+│       ├── .mcp.json                   # Hosted OAuth MCP connection
 │       ├── agents/                     # Coordination-writer role contract
 │       ├── assets/                     # Marketplace icon and logo
 │       ├── hooks/hooks.json            # Claude Code coordination hooks
-│       ├── scripts/                    # Graceful hook launcher
 │       └── skills/hypercolab/          # Coordination workflow and references
 ├── assets/                             # Shared logo assets
 ├── SECURITY.md                         # Vulnerability reporting and boundaries
@@ -410,8 +387,8 @@ repository-specific coordination state.
 ```
 
 Only `plugin.json` lives inside each `.claude-plugin/` directory. Skills, MCP
-configuration, hooks, assets, scripts, and role contracts remain at the plugin
-root according to the Claude Code plugin package layout.
+configuration, hooks, assets, and role contracts remain at the plugin root
+according to the Claude Code plugin package layout.
 
 ## Agent role packaging
 
@@ -430,7 +407,7 @@ delegation is prevented.
 | Component | Authentication | Where credentials live |
 | --- | --- | --- |
 | HyperMemory MCP | OAuth authorization code with PKCE | Claude Code MCP credential storage |
-| HyperColab CLI | `hypercolab login` OAuth flow with PKCE | OS keyring, with a restricted local fallback when no keyring is available |
+| HyperColab MCP | OAuth authorization code with PKCE | Claude Code MCP credential storage |
 | Git marketplace | Public GitHub repository | No credentials required for this repository |
 
 No access token, refresh token, client secret, API key, or reviewer credential
@@ -439,10 +416,9 @@ boundaries.
 
 ## Hook trust and permissions
 
-Plugin installation does not automatically trust bundled command hooks. Users
-must review them with `/hooks`. This provides an explicit boundary around local
-commands that can inspect token counters, query Git state, or check write
-ownership.
+Plugin installation does not automatically trust bundled hooks. Users must
+review them with `/hooks`. This provides an explicit boundary around prompts
+that can invoke recall, check ownership, or spawn background agents.
 
 Administrators may disable hooks or restrict marketplace/MCP sources through
 managed Claude Code policy. Sub-agents inherit the active parent sandbox and
@@ -458,27 +434,16 @@ a new session:
 /plugin marketplace upgrade hypermemory-ai
 /plugin install hypermemory
 /plugin install hypercolab
-pipx upgrade hypercolab
 ```
 
 Review hooks again if their definitions changed.
 
 ## Removing
 
-If you installed HyperColab Git hooks, remove those first while the CLI is still
-available:
-
-```bash
-hypercolab hooks uninstall
-```
-
-Then remove the plugins, marketplace, and optional CLI:
-
 ```bash
 /plugin remove hypermemory
 /plugin remove hypercolab
 /plugin marketplace remove hypermemory-ai
-pipx uninstall hypercolab
 ```
 
 Removing a plugin or marketplace does not delete durable data already stored by
@@ -522,8 +487,7 @@ plugin explicitly:
 ### MCP tools are missing
 
 Confirm that the plugin is installed and enabled with `/plugin list`, then
-start a new session. HyperColab also requires the `hypercolab` executable to be
-on `PATH`; run `hypercolab doctor` to verify its prerequisites.
+start a new session.
 
 ### HyperMemory OAuth did not open
 
@@ -531,18 +495,11 @@ Invoke a HyperMemory MCP operation and complete the connection flow. Confirm
 the installed MCP URL is `https://stage.hypermemory.io/mcp` and check whether a
 workspace policy blocks the server.
 
-### HyperColab authentication failed
+### HyperColab OAuth did not open
 
-Run:
-
-```bash
-hypercolab login
-hypercolab doctor
-hypercolab status
-```
-
-The local callback needs an available loopback port and a browser capable of
-completing OAuth.
+Invoke a HyperColab MCP operation and complete the connection flow. Confirm
+the installed MCP URL is `https://stage.hypermemory.io/colab/mcp` and check
+whether a workspace policy blocks the server.
 
 ### Hooks do not run
 
@@ -552,9 +509,9 @@ policy.
 
 ### A HyperColab write is blocked
 
-Run `hypercolab sync` to inspect active ownership and claims. Coordinate a
-handoff, wait for the conflicting lease to expire, or change the intended path.
-Do not bypass a valid ownership conflict.
+Call `colab_sync` to inspect active ownership and claims. Coordinate a handoff,
+wait for the conflicting lease to expire, or change the intended path. Do not
+bypass a valid ownership conflict.
 
 ### The plugin changed but Claude Code still uses the old copy
 
@@ -598,15 +555,14 @@ registry.
 
 ### Can a normal Claude Desktop user install directly from this Git URL?
 
-Claude Desktop does not support plugins. Users can manually add the HyperMemory
-MCP server in Desktop settings and use a project-level `CLAUDE.md` file for
-best-effort recall/write behavior.
+Claude Desktop does not support plugins. Users can manually add the MCP servers
+in Desktop settings and use a project-level `CLAUDE.md` file for best-effort
+behavior.
 
 ### Is the MCP endpoint production?
 
-No. The checked-in HyperMemory configuration currently targets the Rust staging
-endpoint. Treat the package as pre-production until the manifest and docs are
-updated to a production MCP URL.
+No. Both plugins currently target Rust staging endpoints. Treat the package as
+pre-production until the manifests and docs are updated to production MCP URLs.
 
 ## Documentation
 
