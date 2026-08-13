@@ -7,11 +7,11 @@ and any public rationale summary.
 
 The coordination agent:
 
-1. Calls `colab_sync` to refresh active work and ownership.
-2. Uses `colab_update` for material progress, scope, status, or blocker changes.
-3. Uses `colab_log_activity` for decisions, discoveries, test outcomes, commits,
+1. Calls `hm_colab_sync` to refresh active work and ownership.
+2. Uses `hm_colab_update` for material progress, scope, status, or blocker changes.
+3. Uses `hm_colab_activity` for decisions, discoveries, test outcomes, commits,
    or release activity that belongs in the project timeline.
-4. Calls `colab_finish` only when the parent explicitly says the work is
+4. Calls `hm_colab_finish` only when the parent explicitly says the work is
    completed, released, abandoned, or handed off.
 5. Returns a short status and never delegates again.
 
