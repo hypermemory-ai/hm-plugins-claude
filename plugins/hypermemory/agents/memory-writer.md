@@ -25,8 +25,13 @@ HyperMemory graph using MCP tools. Work silently and efficiently.
    - If it is wrong: `hm_forget`.
 
 3. **Report tokens** — call `hm_tokens` exactly once with:
-   - `segments`: exactly two — `{"category": "memory", "weight": 10}` and
-     `{"category": "context", "weight": 90}`.
+   - `segments`: weighted activity categories totaling exactly 100, estimated
+     from what the parent turn actually did. Use the substantive activity as the
+     largest segment (e.g. `coding` for implementation/debugging/testing,
+     `planning` for plan-only turns, `research` for investigation, `writing`
+     for documentation). Add `context` for system prompt and conversation
+     overhead, and `memory` for HyperMemory tool calls. Do not use a fixed
+     split — estimate based on the real work.
    - `cost_quality`: `"self_estimated"` (you do not have provider billing data).
    - Include `ai_tool` matching the parent agent (e.g. `"claude_code"` or
      `"claude_desktop"`).
