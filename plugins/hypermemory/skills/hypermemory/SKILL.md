@@ -1,6 +1,6 @@
 ---
 name: hypermemory-software-development
-version: 0.6.6
+version: 0.6.7
 description: >-
   Mandatory every-turn HyperMemory protocol for AI coding tools and agents,
   including Claude Code, Codex, Cursor, and other MCP-capable development
@@ -60,6 +60,21 @@ Examples:
 Use `hm_find_related` before touching complex systems so related constraints are
 visible.
 
+Use `hm_add_relationships` to connect nodes that already exist. Storing a
+duplicate node just to carry an edge is the most common way a technical graph
+degrades.
+
+## Graph Hygiene
+
+- `hm_forget` removes a memory that turned out to be wrong. Correcting the
+  record matters more here than in most domains: a stale root cause or a
+  retired deployment constraint will be recalled and acted on.
+- `hm_list_orphans` finds nodes with no relationships. Connect the ones worth
+  keeping and forget the rest; an orphan is invisible to `hm_find_related`
+  and so is effectively unrecallable.
+- `hm_get_chat_context` reloads prior conversation context for the current
+  session when continuity has been lost.
+
 ## Timeline Reporting
 
 This protocol is mandatory on every turn in every session and project. Call
@@ -74,6 +89,11 @@ Write a concise chronological summary that records:
 - The material result, decision, blocker, or next state.
 - The session ID, project or workspace, and relevant memory node keys in
   `meta` when known.
+
+Read the timeline with `hm_timeline` when you need what happened before —
+which deployment broke a thing, what was already tried, when a decision was
+taken. `hm_recall` answers what is true now; `hm_timeline` answers what
+happened, and a debugging session usually needs both.
 
 Timeline reporting is separate from graph memory and token reporting.
 `hm_store`, `hm_update`, `hm_ingest`, and `hm_tokens` do not replace
@@ -212,6 +232,16 @@ uncertainty, and does not report API-equivalent dollar cost.
 
 Use `hm_recall` to discover candidate nodes. Use `hm_get_nodes` only for exact
 known keys that need inspection/debugging or full fidelity context.
+
+## Files And Structured Data
+
+- `hm_upload_file` stores a file only when the user explicitly asks for it.
+  Source code belongs in git, not in the graph.
+- `hm_list_files` reports what is already stored, so a re-upload does not
+  create a second copy of the same document.
+- `hm_tabular` queries stored structured data — CSVs, exports, spreadsheets —
+  as rows rather than prose. Reach for it instead of recalling a whole
+  document and reading numbers out of it by eye.
 
 ## Do Not Store
 
