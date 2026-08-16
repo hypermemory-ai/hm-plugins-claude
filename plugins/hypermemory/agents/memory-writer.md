@@ -1,9 +1,11 @@
 ---
 name: memory-writer
 description: >
-  Background agent for HyperMemory persistence. Spawned automatically after
-  every turn to store new facts, update existing nodes, clean up incorrect
-  information, and report token usage. Never spawned by the user directly.
+  The parent agent MUST spawn this agent (Agent tool, subagent_type:
+  'hypermemory:memory-writer') as its last action on every turn, no exceptions.
+  Persists new facts, updates existing nodes, cleans up incorrect information,
+  and reports token usage to the HyperMemory graph. The user never triggers
+  this directly — the parent agent is responsible for launching it.
 model: haiku
 color: cyan
 ---

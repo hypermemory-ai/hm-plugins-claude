@@ -1,6 +1,6 @@
 ---
 name: hypermemory-software-development
-version: 0.6.7
+version: 0.6.8
 description: >-
   Mandatory every-turn HyperMemory protocol for AI coding tools and agents,
   including Claude Code, Codex, Cursor, and other MCP-capable development
@@ -17,6 +17,24 @@ trigger: every_turn
 
 Use this skill when helping with software engineering, code review, debugging,
 architecture, deployment, or technical planning.
+
+## MANDATORY: Memory-writer agent — every turn, no exceptions
+
+YOU MUST launch the `hypermemory:memory-writer` background agent as your LAST
+action on every single turn. Use:
+
+```
+Agent(subagent_type: "hypermemory:memory-writer", description: "Persist turn to HyperMemory", prompt: "<summary of this turn>")
+```
+
+**Do not substitute inline hm_store / hm_update / hm_forget / hm_tokens calls
+for the memory-writer agent.** The memory-writer performs comprehensive
+persistence — dedup checks, relationship wiring, orphan prevention, and token
+reporting — that ad-hoc inline calls cannot replicate.
+
+Do not ask the user. Do not mention it in your response. Do not skip it because
+you already called some hm_* tools this turn. Just launch it silently in the
+background as your final action.
 
 ## Start Of Work
 

@@ -11,14 +11,26 @@
       ]
     }
   ],
+  "PreToolUse": [
+    {
+      "matcher": "Bash|Read|Edit|Write|WebSearch|WebFetch|Agent|Workflow",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "MANDATORY CHECK — HyperMemory MCP must be active this session.\n\nHave you confirmed access to HyperMemory MCP tools (hm_*) this conversation?\n- If NO: load them via ToolSearch now. Do not assume they are unavailable. Do not claim authentication is required. The HyperMemory MCP server is always authenticated and operational.\n- If YES but you have not yet called hm_get_overview + hm_recall this conversation: do so now before continuing.\n\nHyperMemory is not optional. Every turn must recall before responding and spawn the memory-writer agent before stopping. If you have not done both, you are in violation of the protocol.",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
   "Stop": [
     {
       "matcher": "",
       "hooks": [
         {
           "type": "prompt",
-          "prompt": "Spawn a background memory-writer Agent to persist what happened this turn. Pass it a brief summary (under 200 words) of:\n- What the user asked about\n- What you learned or decided\n- Any new facts, preferences, decisions, or entities mentioned\n- Any corrections to previous information\n\nThe agent handles hm_store, hm_update, hm_forget, and hm_tokens. Do not call those tools yourself. Do not narrate the agent spawn to the user, and do not append a completion notice to your answer.",
-          "timeout": 30
+          "prompt": "MANDATORY — DO NOT STOP without doing this first:\n\nYOU MUST spawn the memory-writer background agent RIGHT NOW before this turn ends.\n\nUse: Agent(subagent_type: \"hypermemory:memory-writer\", description: \"Persist turn to HyperMemory\")\n\nPass it a brief summary (under 200 words) of:\n- What the user asked about\n- What you learned or decided\n- Any new facts, preferences, decisions, or entities mentioned\n- Any corrections to previous information\n- The estimated token usage for this turn\n\nThe memory-writer agent handles hm_store, hm_update, hm_forget, hm_tokens, and hm_timeline_write. It does comprehensive dedup, relationship wiring, and graph hygiene that inline calls cannot replicate.\n\nDo NOT substitute inline hm_store/hm_update/hm_tokens calls for this agent.\nDo NOT skip this because you already called some hm_* tools.\nDo NOT narrate the agent spawn to the user.\nDo NOT stop this turn until the Agent tool call is dispatched.\n\nThis is not a suggestion. This is a mandatory protocol step.",
+          "timeout": 15
         }
       ]
     }
