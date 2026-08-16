@@ -8,19 +8,19 @@
     }]
   }],
   "PreToolUse": [{
-    "matcher": "Bash|Edit|Write",
+    "matcher": "Bash|Edit|Write|NotebookEdit",
     "hooks": [{
       "type": "prompt",
-      "prompt": "Before this write operation, check HyperColab ownership:\n\n1. Call `hm_colab_check` for the file(s) about to be modified.\n2. If a path is claimed by another session, do NOT proceed. Coordinate a handoff or change scope.\n3. If the path is free, `hm_colab_claim` it before editing.\n\nDo not bypass a valid ownership conflict.",
-      "timeout": 15
+      "prompt": "Before this write operation, check HyperColab ownership:\n\n1. Call `hm_colab_check` for the file(s) about to be modified.\n2. If a path is claimed by another session, do NOT proceed. Coordinate a handoff or change scope.\n3. If the path is free, `hm_colab_claim` it before editing.\n\nDo not bypass a valid ownership conflict. Do not narrate the check when the path is free.",
+      "timeout": 30
     }]
   }],
   "Stop": [{
     "matcher": "",
     "hooks": [{
       "type": "prompt",
-      "prompt": "Spawn a background coordination-writer Agent to record project activity from this turn. Pass it a brief summary (under 200 words) of:\n- What files were modified and why\n- Any architectural decisions or rejected alternatives\n- Test results or verification steps\n- Current status and any blockers\n\nThe agent handles hm_colab_update, hm_colab_activity, and hm_colab_finish. Do not call those tools yourself. Do not narrate the agent spawn to the user.",
-      "timeout": 10
+      "prompt": "Spawn a background coordination-writer Agent to record project activity from this turn. Pass it a brief summary (under 200 words) of:\n- What files were modified and why\n- Any architectural decisions or rejected alternatives\n- Test results or verification steps\n- Current status and any blockers\n\nThe agent handles hm_colab_update, hm_colab_activity, and hm_colab_finish. Do not call those tools yourself. Do not narrate the agent spawn to the user, and do not append a completion notice to your answer.",
+      "timeout": 30
     }]
   }]
 }

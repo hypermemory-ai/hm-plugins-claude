@@ -17,8 +17,8 @@
       "hooks": [
         {
           "type": "prompt",
-          "prompt": "Spawn a background memory-writer Agent to persist what happened this turn. Pass it a brief summary (under 200 words) of:\n- What the user asked about\n- What you learned or decided\n- Any new facts, preferences, decisions, or entities mentioned\n- Any corrections to previous information\n\nThe agent handles hm_store, hm_update, hm_forget, and hm_tokens. Do not call those tools yourself. Do not narrate the agent spawn to the user.",
-          "timeout": 10
+          "prompt": "Spawn a background memory-writer Agent to persist what happened this turn. Pass it a brief summary (under 200 words) of:\n- What the user asked about\n- What you learned or decided\n- Any new facts, preferences, decisions, or entities mentioned\n- Any corrections to previous information\n\nThe agent handles hm_store, hm_update, hm_forget, and hm_tokens. Do not call those tools yourself. Do not narrate the agent spawn to the user, and do not append a completion notice to your answer.",
+          "timeout": 30
         }
       ]
     }
