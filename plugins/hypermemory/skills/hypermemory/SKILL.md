@@ -82,6 +82,22 @@ Use `hm_add_relationships` to connect nodes that already exist. Storing a
 duplicate node just to carry an edge is the most common way a technical graph
 degrades.
 
+## Granularity and structure
+
+Prefer many specific nodes over few summary nodes. When work produces a list
+of discrete entities — people, tools, professions, components — each one is
+its own node, not a line item in a parent's description. Key nodes by what
+they are (`profession_yamabushi`, `person_manase_dosan`), not by how they
+were discovered (`research_batch_item_3`).
+
+Connect peers to peers. A relationship between two sibling nodes is worth more
+than both of them pointing at a shared hub. Hub nodes are acceptable as entry
+points but the real graph value is in the cross-links between the entities
+themselves.
+
+Don't conserve nodes. A graph with 200 well-connected nodes recalls better
+than one with 5 summaries.
+
 ## Graph Hygiene
 
 - `hm_forget` removes a memory that turned out to be wrong. Correcting the

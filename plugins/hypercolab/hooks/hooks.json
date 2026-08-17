@@ -1,26 +1,31 @@
 {
-  "SessionStart": [{
-    "matcher": "",
-    "hooks": [{
-      "type": "prompt",
-      "prompt": "A HyperColab plugin is installed. At the start of this session, silently perform project coordination:\n\n1. Call `hm_colab_join` to join the project associated with the current Git repository.\n2. Call `hm_colab_sync` to retrieve active sessions, ownership, and recent events.\n3. Use the returned brief and sync data to understand what is being worked on and by whom.\n\nDo not announce or narrate the coordination. Just do it, then respond normally.",
-      "timeout": 30
+  "description": "HyperColab plugin — project coordination, file ownership, and activity tracking",
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "prompt",
+        "prompt": "A HyperColab plugin is installed. At the start of this session, silently perform project coordination:\n\n1. Call `hm_colab_join` to join the project associated with the current Git repository.\n2. Call `hm_colab_sync` to retrieve active sessions, ownership, and recent events.\n3. Use the returned brief and sync data to understand what is being worked on and by whom.\n\nDo not announce or narrate the coordination. Just do it, then respond normally.",
+        "timeout": 30
+      }]
+    }],
+    "PreToolUse": [{
+      "matcher": "Bash|Edit|Write|NotebookEdit",
+      "hooks": [{
+        "type": "prompt",
+        "prompt": "Before this write operation, check HyperColab ownership:\n\n1. Call `hm_colab_check` for the file(s) about to be modified.\n2. If a path is claimed by another session, do NOT proceed. Coordinate a handoff or change scope.\n3. If the path is free, `hm_colab_claim` it before editing.\n\nDo not bypass a valid ownership conflict. Do not narrate the check when the path is free.",
+        "timeout": 30
+      }]
+    }],
+    "Stop": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "prompt",
+        "prompt": "Spawn a background coordination-writer Agent to record project activity from this turn. Pass it a brief summary (under 200 words) of:\n- What files were modified and why\n- Any architectural decisions or rejected alternatives\n- Test results or verification steps\n- Current status and any blockers\n\nThe agent handles hm_colab_update, hm_colab_activity, and hm_colab_finish. Do not call those tools yourself. Do not narrate the agent spawn to the user, and do not append a completion notice to your answer.",
+        "timeout": 30,
+        "asyncRewake": true,
+        "rewakeSummary": "HyperColab background coordination completed"
+      }]
     }]
-  }],
-  "PreToolUse": [{
-    "matcher": "Bash|Edit|Write|NotebookEdit",
-    "hooks": [{
-      "type": "prompt",
-      "prompt": "Before this write operation, check HyperColab ownership:\n\n1. Call `hm_colab_check` for the file(s) about to be modified.\n2. If a path is claimed by another session, do NOT proceed. Coordinate a handoff or change scope.\n3. If the path is free, `hm_colab_claim` it before editing.\n\nDo not bypass a valid ownership conflict. Do not narrate the check when the path is free.",
-      "timeout": 30
-    }]
-  }],
-  "Stop": [{
-    "matcher": "",
-    "hooks": [{
-      "type": "prompt",
-      "prompt": "Spawn a background coordination-writer Agent to record project activity from this turn. Pass it a brief summary (under 200 words) of:\n- What files were modified and why\n- Any architectural decisions or rejected alternatives\n- Test results or verification steps\n- Current status and any blockers\n\nThe agent handles hm_colab_update, hm_colab_activity, and hm_colab_finish. Do not call those tools yourself. Do not narrate the agent spawn to the user, and do not append a completion notice to your answer.",
-      "timeout": 30
-    }]
-  }]
+  }
 }
