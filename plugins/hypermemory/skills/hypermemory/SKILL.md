@@ -1,289 +1,320 @@
 ---
-name: hypermemory-software-development
+name: hypermemory
 version: 0.6.8
 description: >-
-  Mandatory every-turn HyperMemory protocol for AI coding tools and agents,
-  including Claude Code, Codex, Cursor, and other MCP-capable development
-  environments. Use in every session and project, including every user turn,
-  to recall and store durable context, write a chronological timeline entry,
-  and submit complete, accurately classified token telemetry. Preserve
-  technical context, implementation decisions, codebase facts, debugging
-  history, and deployment constraints.
+  Persistent memory graph for AI agents via HyperMemory MCP tools. Recall
+  context, store facts and relationships, enforce hyperedge policy, and
+  maintain graph hygiene on every message. Use when user-hypermemory MCP is
+  connected or the user mentions HyperMemory, hm_store, hm_recall, or memory.
+  Skip main-agent retrieval only for hook-classified lightweight social
+  messages, and dispatch end-of-turn persistence through a fire-and-forget
+  memory-writer sub-agent.
 enforcement: mandatory
 trigger: every_turn
 ---
 
-# HyperMemory Software Development Skill
+# HyperMemory MCP — Agent Protocol
 
-Use this skill when helping with software engineering, code review, debugging,
-architecture, deployment, or technical planning.
+You have the `user-hypermemory` MCP server. Use its tools every message according
+to the main-agent and memory-writer roles below.
 
-## MANDATORY: Memory-writer agent — every turn, no exceptions
+## Every conversation
 
-YOU MUST launch the `hypermemory:memory-writer` background agent as your LAST
-action on every single turn. Use:
+**First substantive message (before responding):**
 
-```
-Agent(subagent_type: "hypermemory:memory-writer", description: "Persist turn to HyperMemory", prompt: "<summary of this turn>")
-```
+1. `hm_get_overview`
+2. `hm_recall` with keywords from the user's message
 
-**Do not substitute inline hm_store / hm_update / hm_forget / hm_tokens calls
-for the memory-writer agent.** The memory-writer performs comprehensive
-persistence — dedup checks, relationship wiring, orphan prevention, and token
-reporting — that ad-hoc inline calls cannot replicate.
+**Every substantive message (silently, before responding):**
 
-Do not ask the user. Do not mention it in your response. Do not skip it because
-you already called some hm_* tools this turn. Just launch it silently in the
-background as your final action.
+1. Main agent → `hm_recall` with keywords from the user's message.
+2. Use recalled context naturally in the response.
 
-## Start Of Work
+When the lifecycle hook classifies a message as `lightweight`, skip
+`hm_get_overview` and `hm_recall` on the main agent. Classification must be
+narrow and deterministic: after trimming whitespace and punctuation, the prompt
+must be at most 80 characters and consist solely of a standalone greeting or
+acknowledgement such as `hey`, `hello`, `hi`, `howdy`, `thanks`, `thank you`,
+`okay`, `ok`, or `got it`. A short task, question, entity, file, code fragment,
+number, or decision remains substantive. If classification is absent or
+uncertain, treat the message as substantive.
 
-1. Call `hm_get_overview`.
-2. Call `hm_recall` for the repository, feature, bug, service, and tool names.
-3. Use `hm_get_nodes(keys=[...])` for exact keys when you need full,
-   untruncated records, structured data, assets, duplicates, or relationships.
-4. Use recalled and hydrated constraints before proposing or changing anything.
+**Every message (silently, before the final response):**
 
-## What To Remember
+1. Spawn exactly one fresh memory-writer sub-agent with `fork_turns="none"` and
+   a turn-unique task name.
+2. Pass only a concise bounded summary plus any token-listener job supplied by
+   the lifecycle hook.
+3. Tell the writer to call `hm_recall`, then use `hm_store`, `hm_update`, or
+   `hm_forget` as appropriate; write exactly one `hm_timeline_write` entry; and
+   call `hm_tokens` exactly once. Every new node needs a specific relationship.
+4. Fire and forget: after the spawn succeeds, return the user-facing response
+   immediately. Never call `wait_agent`, poll, inspect, read, message, or
+   otherwise synchronize with the writer.
 
-Store durable engineering context:
+The writer performs graph persistence and token finalization. The main agent
+must not duplicate those writes when sub-agent dispatch is available.
 
-- Architecture decisions and the reason they were made.
-- Production constraints, deployment topology, service ownership, and rollback or recovery requirements.
-- Bugs, root causes, fixes, test evidence, and commands that verified the result.
-- User preferences about coding style, release process, branching, commits, and documentation.
-- Important file paths, APIs, schemas, queue names, model names, environment variables, and external services.
+Never ask permission to save. Never announce that you saved.
 
-Update existing nodes when facts change. Do not create duplicates for the same
-component, bug, project, or decision.
+---
 
-Use only canonical ontology classes for `node_type`. Common classes include
-`user person organization component event decision concept artifact project
-technology preference fact skill`. Do not invent new `node_type` values or
-ontology classes. If uncertain, omit `node_type` or choose the closest
-canonical class; HyperMemory resolves invalid or missing input internally
-before persistence.
+## Tool reference
 
-## Relationship Guidance
+| Tool | Use when |
+|------|----------|
+| `hm_get_overview` | Start of conversation — graph stats |
+| `hm_recall` | Search memory; always before store |
+| `hm_get_nodes` | Hydrate known exact keys with full node details |
+| `hm_store` | New node + optional relationships |
+| `hm_update` | Correct or expand existing node |
+| `hm_forget` | Delete node (cascades edges) |
+| `hm_find_related` | Traverse graph from a seed node |
+| `hm_add_relationships` | Connect existing nodes; fix orphans |
+| `hm_get_relationships` | *(REST/CLI only — not MCP)* |
+| `hm_get_chat_context` | Reload nodes from current chat session |
+| `hm_list_orphans` | After every `hm_ingest` |
+| `hm_ingest` | Dense multi-entity text (creates orphans) |
+| `hm_upload_file` | User explicitly asks to store a file (Pro+) |
+| `hm_list_files` | Query uploaded files |
+| `hm_timeline_write` | Diary line not captured as a node |
+| `hm_tokens` | End-of-turn token/cost report with weighted activity segments |
+| `hm_timeline` | Temporal lookup (not auto-loaded) |
+| `hm_skill` | Retrieve or update current HyperMemory agent skills |
 
-Always connect technical memories to the relevant project, service, component,
-or decision.
-
-Examples:
-
-```json
-{"to_key": "component_mcp_server", "relationship": "signup provisioning fix depends on Supabase OTP verification before account lifecycle creation"}
-```
-
-Use `hm_find_related` before touching complex systems so related constraints are
-visible.
-
-Use `hm_add_relationships` to connect nodes that already exist. Storing a
-duplicate node just to carry an edge is the most common way a technical graph
-degrades.
-
-## Granularity and structure
-
-Prefer many specific nodes over few summary nodes. When work produces a list
-of discrete entities — people, tools, professions, components — each one is
-its own node, not a line item in a parent's description. Key nodes by what
-they are (`profession_yamabushi`, `person_manase_dosan`), not by how they
-were discovered (`research_batch_item_3`).
-
-Connect peers to peers. A relationship between two sibling nodes is worth more
-than both of them pointing at a shared hub. Hub nodes are acceptable as entry
-points but the real graph value is in the cross-links between the entities
-themselves.
-
-Don't conserve nodes. A graph with 200 well-connected nodes recalls better
-than one with 5 summaries.
-
-## Graph Hygiene
-
-- `hm_forget` removes a memory that turned out to be wrong. Correcting the
-  record matters more here than in most domains: a stale root cause or a
-  retired deployment constraint will be recalled and acted on.
-- `hm_list_orphans` finds nodes with no relationships. Connect the ones worth
-  keeping and forget the rest; an orphan is invisible to `hm_find_related`
-  and so is effectively unrecallable.
-- `hm_get_chat_context` reloads prior conversation context for the current
-  session when continuity has been lost.
-
-## Timeline Reporting
-
-This protocol is mandatory on every turn in every session and project. Call
-`hm_timeline_write` exactly once on every turn before the final response. This
-is required even when the turn is short, conversational, diagnostic, blocked,
-or produces no file changes.
-
-Write a concise chronological summary that records:
-
-- What the user requested, decided, corrected, or clarified.
-- What the agent actually did during the turn.
-- The material result, decision, blocker, or next state.
-- The session ID, project or workspace, and relevant memory node keys in
-  `meta` when known.
-
-Read the timeline with `hm_timeline` when you need what happened before —
-which deployment broke a thing, what was already tried, when a decision was
-taken. `hm_recall` answers what is true now; `hm_timeline` answers what
-happened, and a debugging session usually needs both.
-
-Timeline reporting is separate from graph memory and token reporting.
-`hm_store`, `hm_update`, `hm_ingest`, and `hm_tokens` do not replace
-`hm_timeline_write`. Do not limit timeline entries to notable debugging
-milestones or deployments. Use additional timeline entries only for distinct
-major milestones within a long-running turn; the required end-of-turn entry
-must still summarize the complete turn.
-
-## Token Reporting
-
-This protocol is mandatory on every turn in every session and project. During
-end-of-turn finalization, call `hm_tokens` exactly once with the same session ID
-and a monotonically increasing turn sequence. Never treat token reporting as a
-compliance checkbox or submit only the minimum fields accepted by the server.
-
-### Codex exact-token helper
-
-When `hm-codex-tokens` is installed, use it instead of manually estimating or
-calling the MCP `hm_tokens` tool. The helper reads only Codex `token_count`
-counters from local rollout JSONL files and invokes the canonical `hm_tokens`
-endpoint once. Do not also call MCP `hm_tokens` on the same turn.
-
-Run it after `hm_timeline_write`, as the last tool action before the final
-response:
-
-```bash
-hm-codex-tokens submit \
-  --session-id "<codex-session-uuid>" \
-  --turn-sequence <n> \
-  --model "<model>" \
-  --segments-json '[{"category":"coding","weight":80},{"category":"context","weight":15},{"category":"memory","weight":5}]'
-```
-
-Treat the returned counters as `client_exact`. The helper advances its durable
-checkpoint only after HyperMemory accepts the report. A later turn picks up
-model calls that occur after the prior turn's submission. If the helper is
-missing or fails, fall back to `self_estimated`, include uncertainty, and state
-the fallback honestly; never invent exact counts.
-
-### Consumer ChatGPT estimation
-
-Consumer ChatGPT does not expose Codex rollout counters. Estimate the complete
-model workload, not only the latest user message or visible final answer:
-
-1. Estimate the input context for every model invocation, including system and
-   skill instructions, conversation context, tool definitions, retrieved
-   documents, and tool results.
-2. Add the output and reasoning produced by every invocation.
-3. Count continuations after tool results as additional model invocations.
-4. Sanity-check long or tool-heavy turns. A report must scale with both context
-   size and invocation count; do not submit a small fixed estimate after a
-   large multi-tool workflow.
-5. Report `measurement_quality: self_estimated`,
-   `uncertainty_percentage: 40`, and an honest `estimation_bias`. Prefer
-   `high` when missing context or hidden tool loops could cause undercounting.
-
-The target is a useful estimate within roughly plus or minus 40 percent, not
-false precision. Severe systematic under-reporting is unacceptable.
-
-Submit the fullest truthful telemetry available:
-
-- `input_tokens`, `output_tokens`, and `total_tokens`.
-- `reasoning_tokens` and `cache_tokens` when exposed by the AI tool, or when a
-  defensible estimate is possible.
-- Exact client counts with `measurement_quality: client_exact` when available.
-- Otherwise, carefully reasoned `self_estimated` values, an uncertainty
-  percentage appropriate to the tool (normally 40 for consumer chat clients),
-  and an honest estimation bias.
-- `cost_usd` only when its provenance is legitimate; never invent cost.
-
-Omit a field only when it is unavailable and cannot be defensibly estimated.
-Never label an estimate as exact or provider-verified.
-
-Every report must use one or more weighted activity categories totaling exactly
-100:
-`reasoning`, `memory`, `context`, `doc_processing`, `automation`,
-`personal`, `chatting`, `research`, `design`, `calculations`, `coding`,
-`planning`, `productivity`, `writing`, or `unmatched`.
-
-Each category may appear at most once in a report. If multiple activities map
-to the same category, combine them into one segment and add their weights; do
-not submit duplicate category entries.
-
-Classify the work performed on the turn, not the conversational wording of the
-request:
-
-1. For software-development agents and software work, use `coding` as the
-   default substantive activity. This includes implementation, debugging,
-   testing, code review, repository inspection, architecture work tied to a
-   codebase, deployment work, and technical configuration.
-2. Use `planning` only when the AI tool is explicitly operating in a planning
-   mode or the requested deliverable is a plan rather than implementation.
-3. Ballpark `memory` and `context` as overhead based on the actual turn. Do not
-   let either replace the substantive activity.
-4. Normally assign zero to `design`, `productivity`, `chatting`,
-   `calculations`, `doc_processing`, `research`, `writing`, `personal`, and
-   `automation`. Include one only when that activity was genuinely performed
-   as a material part of the turn.
-5. Before submission, verify that the activity weights total exactly 100 and
-   that the largest share represents the turn's real work.
-
-Typical software implementation report:
-
-```json
-[
-  {"category": "coding", "weight": 80},
-  {"category": "context", "weight": 15},
-  {"category": "memory", "weight": 5}
-]
-```
-
-Typical planning-only report:
-
-```json
-[
-  {"category": "planning", "weight": 75},
-  {"category": "context", "weight": 20},
-  {"category": "memory", "weight": 5}
-]
-```
-
-Do not use a fixed `memory: 10` and `context: 90` split for software work; that
-destroys activity attribution. Do not use the removed `mem_ingest` or
-`mem_retrieve` categories.
-
-When reporting `cost_usd`, also set `cost_quality`: `provider_actual` only for a
-provider-billed amount, `price_calculated` for exact tokens multiplied by known
-model pricing, or `self_estimated` for an approximate amount. Use `unavailable`
-when no cost is supplied. Token measurement quality and cost quality are separate.
-
-For OpenRouter responses, submit client-visible token fields and weighted
-segments. HyperMemory treats them as provisional attribution and reconciles
-them with management analytics for the OpenRouter key mapped to the user. Never
-invent provider-actual values. Claude Desktop uses `self_estimated`, includes
+For `hm_tokens`, report `cost_usd` with a separate `cost_quality`:
+`provider_actual`, `price_calculated`, `self_estimated`, or `unavailable`.
+Only use `provider_actual` for a provider-billed amount.
+For OpenRouter, submit client-visible token fields and weighted segments.
+HyperMemory treats them as provisional attribution and reconciles them with
+management analytics for the OpenRouter key mapped to the user. Never invent
+provider-actual values. Claude Desktop uses `self_estimated`, includes
 uncertainty, and does not report API-equivalent dollar cost.
+When multiple AI accounts are configured, include the matching `ai_account_id`
+in `hm_tokens`. Without it, HyperMemory auto-assigns only when exactly one
+active account matches `ai_tool`; ambiguous reports remain unassigned but still
+count in the user's aggregate totals.
+Each segment category may appear only once per report. Merge activities that
+share a category into one segment and combine their weights before calling
+`hm_tokens`; all resulting weights must total exactly 100.
+Estimate segmentation separately from token counting. Exact token counters do
+not make activity attribution exact.
 
-Use `hm_recall` to discover candidate nodes. Use `hm_get_nodes` only for exact
-known keys that need inspection/debugging or full fidelity context.
+Allowed categories are `reasoning`, `memory`, `context`,
+`doc_processing`, `automation`, `personal`, `chatting`, `research`,
+`design`, `calculations`, `coding`, `planning`, `productivity`,
+`writing`, and `unmatched`.
 
-## Files And Structured Data
+Classify the work actually performed:
 
-- `hm_upload_file` stores a file only when the user explicitly asks for it.
-  Source code belongs in git, not in the graph.
-- `hm_list_files` reports what is already stored, so a re-upload does not
-  create a second copy of the same document.
-- `hm_tabular` queries stored structured data — CSVs, exports, spreadsheets —
-  as rows rather than prose. Reach for it instead of recalling a whole
-  document and reading numbers out of it by eye.
+- Make the substantive activity the largest share. For software implementation,
+  debugging, testing, code review, repository inspection, deployment, and
+  technical configuration, use `coding` as the primary category.
+- Use `planning` when the deliverable is a plan rather than implementation,
+  `research` for material source gathering, and the other substantive
+  categories only when that work actually occurred.
+- Use `memory` only for HyperMemory recall, graph persistence, timeline, and
+  token-finalization overhead. Use `context` only for reading conversation,
+  retrieved files, instructions, and tool results.
+- Never use `memory` or `context` as catch-all substitutes for the turn's
+  real work. If classification is genuinely unavailable, use
+  `unmatched: 100` explicitly.
+- Omit zero-weight categories, keep categories unique, and verify that weights
+  total 100. Do not use the removed `mem_ingest` or `mem_retrieve`
+  categories.
+`estimation_bias` is exactly `low`, `neutral`, or `high`. Token and cost
+provenance are independent: exact tokens may use `cost_quality: self_estimated`
+for an estimated USD amount. If validation rejects
+a report, correct the named field once and never repeat an unchanged payload.
 
-## Do Not Store
+**Naming traps:** There is no `hm_related` or `hm_relate`. Use `hm_find_related` to traverse, `hm_add_relationships` to create edges.
 
-- Full secrets, API keys, passwords, or private tokens.
-- Large code blobs that should stay in git.
-- Unverified guesses; store root causes only after evidence supports them.
+**Recall vs hydrate:** Use `hm_recall` to search for candidate nodes. Use
+`hm_get_nodes(keys=[...])` when you already know exact keys and need full,
+untruncated descriptions, data, assets, duplicate records, and relationships.
 
-## Skill Updates
+**Skill updates:** If asked to install or update HyperMemory instructions, call
+`hm_skill` with `action="get"` and the best variant for the agent. Preserve the
+returned skill verbatim as the baseline, including all YAML frontmatter, and
+apply local behavioral amendments as a minimal diff.
 
-When asked to install or update HyperMemory behavior, call `hm_skill` with
-`variant="software-development"`.
+---
+
+## Node types
+
+```
+user person organization component event decision concept artifact
+project technology preference fact skill
+```
+
+`node_type` is one canonical ontology class, not a free-form label. Do not
+invent new types or ontology classes in agent output. If unsure, omit
+`node_type` or choose the closest canonical class; the server resolves invalid
+or missing input internally before persistence.
+
+**Key format:** `{type}_{name}` — e.g. `decision_jwt_auth`, `person_alice`, `tech_redis`
+
+**Singleton:** `user_profile` — primary user; keep updated.
+
+---
+
+## Style Contract
+
+Use `node_type="preference"` for prescriptive communication and visual-language
+memories that should guide future agent output.
+
+Style nodes are not transcripts. Synthesize user descriptions, feedback, and
+source content into prompt-usable instructions for another agent. Keep short
+source quotes only when they are valuable as examples.
+
+**Keys:** `style_{scope}_{facet}` or `style_{scope}_{project}_{facet}` when a
+scope has multiple project styles.
+
+**Data envelope convention:**
+
+```json
+{
+  "facet": "voice | tone | lexicon | format | visual | photography | persona",
+  "scope": "brand/project/audience this governs",
+  "project": "optional project discriminator within the scope",
+  "strength": "mandatory | preferred | situational",
+  "intent": "one-line purpose",
+  "rules": ["operational do-rules"],
+  "avoid": ["explicit anti-patterns"],
+  "examples": [{"do": "...", "dont": "..."}],
+  "tokens": {}
+}
+```
+
+`facet`, `scope`, and `strength` are required by convention. `project`,
+`intent`, `rules`, `avoid`, `examples`, and `tokens` are optional.
+
+Always include an `applies_to` edge to `project_*`, `org_*`, or `user_profile`.
+After authoring related facets, create or maintain a joint-necessity hyperedge
+such as `{scope}_style_system` or `{scope}_{project}_style_system`.
+
+Written style nodes should turn vague feedback into operational rules,
+anti-patterns, lexicon choices, formatting preferences, and high-signal
+do/don't examples. Visual, photography, image, and video style nodes should
+prefer concrete generation-ready tokens: real font names or font families,
+exact hex colors, composition, lighting, camera, texture, motion, aspect ratio,
+and rendering vocabulary. Avoid generic adjectives unless paired with observable
+implementation details.
+
+After overview/recall, resolve the active style when a project, brand,
+organization, user, or artifact context is clear. Treat matching style memories
+as binding writing and design instructions for the session. If no active context
+is clear, do not pin a style contract.
+
+---
+
+## Relationships
+
+Always include at least one relationship on `hm_store`. Orphan nodes (zero edges) are a hygiene failure.
+
+Describe **why** nodes connect — not bare verbs.
+
+```json
+{"relationships": [{"to_key": "tech_qdrant", "relationship": "search pipeline depends on Qdrant for hybrid vector retrieval"}]}
+```
+
+### Binary edge spec
+
+```json
+{"from_key": "person_alice", "to_key": "project_foo", "relationship": "Alice leads the platform migration", "description": "optional"}
+```
+
+Omit `from_key` on `hm_store` — defaults to the stored node's key. Use `to_key` or `target_key`.
+
+### Hyperedge spec (3+ participants)
+
+```json
+{
+  "relationships": [{
+    "participant_keys": ["project_hypermemory", "tech_surrealdb", "tech_qdrant", "tech_redis"],
+    "relationship": "platform_component_assembly",
+    "description": "These four components ship as one deployable platform unit; removing any one breaks the production stack definition"
+  }]
+}
+```
+
+---
+
+## Hyperedge policy (enforced server-side)
+
+Hyperedges mean **joint necessity** — removing any participant changes the meaning.
+
+| Participants | Rule |
+|--------------|------|
+| **2** | Auto-downgraded to binary edge — never stored as hyperedge |
+| **3** | Allowed only with **80+ char** `description` explaining joint necessity |
+| **4–5** | Specific `relationship` label (≥10 chars, not generic) |
+| **6–9** | Pass if label is specific |
+| **10+** | Encouraged for true assembly/cluster facts |
+| **Any** | Generic labels rejected: `relates_to`, `connected`, `associated`, `linked`, `related`, `related_to` |
+| **`chat_*`** | **Reserved** — system creates session hyperedges; agents must never use |
+
+**Removal test:** If the group still makes sense after removing one node, use binary edges instead.
+
+**5+ nodes in one joint fact:** one hyperedge with all `participant_keys` — not a mesh of pairs or overlapping triads.
+
+---
+
+## Graph hygiene
+
+`hm_ingest` creates nodes but often skips edges. **After every ingest:**
+
+1. `hm_list_orphans` (limit 20)
+2. Enriched orphans → `hm_add_relationships`
+3. Noise / empty orphans → `hm_forget`
+4. Re-check: `hm_list_orphans` (limit 1) — target zero
+
+Never chain multiple ingests without orphan cleanup between them.
+
+---
+
+## Session hyperedges
+
+The server auto-groups nodes touched in a chat after **5+ tool calls** (`hm_recall`, `hm_store`, `hm_find_related`, `hm_add_relationships`, `hm_ingest`).
+
+- Resume a session: `hm_get_chat_context` (optional `session_id`)
+- Do not create `chat_*` relationships yourself
+
+---
+
+## Files (Pro+)
+
+- `hm_upload_file` — only when user explicitly asks (`filename`, `content_base64`)
+- `hm_list_files` — query stored files
+
+---
+
+## Timeline (optional)
+
+Not loaded automatically. Use when temporal context matters:
+
+- `hm_timeline_write(summary)` — explicit diary entry
+- `hm_timeline(period="24h")` — recent activity
+- `hm_timeline(node_key="tech_redis")` — history for one node
+
+Periods: `1h`, `3h`, `6h`, `12h`, `24h`, `7d`, `14d`, `30d`, `90d`, `1y`
+
+---
+
+## Store / skip
+
+**Store:** decisions + rationale, preferences, people/roles, projects, architecture, bugs/fixes, deployments, important facts.
+
+**Skip:** trivial acks, duplicates (update instead), conversation mechanics.
+
+---
+
+## Hard rules
+
+- `hm_get_overview` + `hm_recall` before first substantive response
+- `hm_recall` before every `hm_store`
+- Use a canonical `node_type` when confident; omit rather than invent one
+- Always include `relationships` on store
+- Never skip fire-and-forget memory-writer dispatch on any message
+- Never wait for, poll, or inspect the memory-writer after dispatch
+- Never use `chat_*` relationship names
