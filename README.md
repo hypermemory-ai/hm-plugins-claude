@@ -17,11 +17,9 @@
 </p>
 
 > [!IMPORTANT]
-> This repository is the Git-backed development marketplace for Claude Code.
-> Both plugins currently connect to Rust staging MCPs at
-> `https://stage.hypermemory.io/mcp` and `https://stage.hypermemory.io/colab/mcp`.
-> Public, one-click installation for normal Claude Code users requires separate
-> publication through Anthropic's plugin marketplace.
+> This repository is the Git-backed marketplace for Claude Code.
+> Both plugins connect to production MCPs at
+> `https://mcp.hypermemory.io/mcp` and `https://mcp.hypermemory.io/colab/mcp`.
 
 ## Contents
 
@@ -251,7 +249,7 @@ user explicitly asks to store a file.
 The plugin connects to:
 
 ```text
-https://stage.hypermemory.io/mcp
+https://mcp.hypermemory.io/mcp
 ```
 
 The server supports authorization-code OAuth, PKCE S256, refresh tokens, and
@@ -323,7 +321,7 @@ the agent coordinates a handoff, waits for lease expiry, or changes scope.
 The plugin connects to:
 
 ```text
-https://stage.hypermemory.io/colab/mcp
+https://mcp.hypermemory.io/colab/mcp
 ```
 
 The server supports the same OAuth flow as HyperMemory: authorization-code
@@ -498,13 +496,13 @@ start a new session.
 ### HyperMemory OAuth did not open
 
 Invoke a HyperMemory MCP operation and complete the connection flow. Confirm
-the installed MCP URL is `https://stage.hypermemory.io/mcp` and check whether a
+the installed MCP URL is `https://mcp.hypermemory.io/mcp` and check whether a
 workspace policy blocks the server.
 
 ### HyperColab OAuth did not open
 
 Invoke a HyperColab MCP operation and complete the connection flow. Confirm
-the installed MCP URL is `https://stage.hypermemory.io/colab/mcp` and check
+the installed MCP URL is `https://mcp.hypermemory.io/colab/mcp` and check
 whether a workspace policy blocks the server.
 
 ### Hooks do not run

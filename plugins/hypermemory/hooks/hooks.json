@@ -14,11 +14,10 @@
     ],
     "UserPromptSubmit": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "BEFORE responding to this message, silently perform HyperMemory recall:\n\n1. If hm_get_overview has NOT been called yet in this conversation, call it now.\n2. Call hm_recall with 2-4 keywords extracted from the user's message.\n3. Use recalled context to inform your response.\n\nDo not announce or narrate the recall. Do not ask permission. Just do it, then respond normally.",
+            "prompt": "BEFORE responding to this message, silently perform HyperMemory recall:\n\n1. If hm_get_overview has NOT been called yet in this conversation, call it now.\n2. Call hm_recall with 2-4 keywords extracted from the user's message.\n3. Use recalled context to inform your response.\n\nIf the HyperMemory MCP server reports authentication errors, DO NOT accept that at face value. Verify by attempting to call hm_get_overview directly — there are often multiple MCP server instances and one may work even when another reports unauthenticated. Always try the tools before concluding they are unavailable.\n\nDo not announce or narrate the recall. Do not ask permission. Just do it, then respond normally.",
             "timeout": 30
           }
         ]
@@ -38,11 +37,10 @@
     ],
     "Stop": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "MANDATORY — DO NOT STOP without doing this first:\n\nYOU MUST spawn the memory-writer background agent RIGHT NOW before this turn ends.\n\nUse: Agent(subagent_type: \"hypermemory:memory-writer\", description: \"Persist turn to HyperMemory\")\n\nPass it a brief summary (under 200 words) of:\n- What the user asked about\n- What you learned or decided\n- Any new facts, preferences, decisions, or entities mentioned\n- Any corrections to previous information\n- The estimated token usage for this turn\n\nThe memory-writer agent handles hm_store, hm_update, hm_forget, hm_tokens, and hm_timeline_write. It does comprehensive dedup, relationship wiring, and graph hygiene that inline calls cannot replicate.\n\nDo NOT substitute inline hm_store/hm_update/hm_tokens calls for this agent.\nDo NOT skip this because you already called some hm_* tools.\nDo NOT narrate the agent spawn to the user.\nDo NOT stop this turn until the Agent tool call is dispatched.\n\nThis is not a suggestion. This is a mandatory protocol step.",
+            "prompt": "MANDATORY — DO NOT STOP without doing this first:\n\nYOU MUST spawn the memory-writer background agent RIGHT NOW before this turn ends.\n\nUse: Agent(subagent_type: \"hypermemory:memory-writer\", description: \"Persist turn to HyperMemory\")\n\nPass it a brief summary (under 200 words) of:\n- What the user asked about\n- What you learned or decided\n- Any new facts, preferences, decisions, or entities mentioned\n- Any corrections to previous information\n- The estimated token usage for this turn\n\nThe memory-writer agent handles hm_store, hm_update, hm_forget, hm_tokens, and hm_timeline_write. It does comprehensive dedup, relationship wiring, and graph hygiene that inline calls cannot replicate.\n\nDo NOT substitute inline hm_store/hm_update/hm_tokens calls for this agent.\nDo NOT skip this because you already called some hm_* tools.\nDo NOT narrate the agent spawn to the user.\nDo NOT stop this turn until the Agent tool call is dispatched.\nDo NOT wait for the memory worker to finish — launch it in the background and keep the main conversation running.\n\nThis is not a suggestion. This is a mandatory protocol step.",
             "timeout": 15,
             "asyncRewake": true,
             "rewakeSummary": "HyperMemory background persistence completed"

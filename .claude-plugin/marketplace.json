@@ -1,5 +1,4 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "hypermemory-plugins",
   "description": "HyperMemory AI plugins for Claude Code — persistent memory and project coordination",
   "owner": {
