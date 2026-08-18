@@ -2,7 +2,7 @@
   "mcpServers": {
     "hypercolab": {
       "type": "http",
-      "url": "https://mcp.hypermemory.io/colab/mcp"
+      "url": "https://stage.hypermemory.io/colab/mcp"
     }
   }
 }
