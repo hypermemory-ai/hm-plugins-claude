@@ -48,16 +48,16 @@ installable Claude Code plugins:
 
 | Plugin | Current version | Purpose |
 | --- | ---: | --- |
-| **HyperMemory** | `0.1.0` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
-| **HyperColab** | `0.1.0` | Shared project context, work ownership, path claims, project timelines, and multi-agent collision prevention |
+| **HyperMemory** | `2.7.0` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
+| **HyperColab** | `2.7.0` | Shared project context, work ownership, path claims, project timelines, and multi-agent collision prevention |
 
-The marketplace is named `hypermemory-ai`. A marketplace is a catalog and
+The marketplace is named `hypermemory-plugins`. A marketplace is a catalog and
 source of plugins; registering it does **not** install either plugin. Users add
 the marketplace once, then choose HyperMemory, HyperColab, or both.
 
 ```text
 GitHub repository                      Marketplace              Installable plugins
-hypermemory-ai/hm-plugins-claude   ->  hypermemory-ai       ->  hypermemory
+hypermemory-ai/hm-plugins-claude   ->  hypermemory-plugins  ->  hypermemory
                                                              ->  hypercolab
 ```
 
@@ -123,7 +123,7 @@ Confirm Claude Code can see it:
 ### 2. Install HyperMemory
 
 ```bash
-/plugin install hypermemory
+/plugin install hypermemory@hypermemory-plugins
 ```
 
 Complete the HyperMemory OAuth flow when prompted, then start a new session.
@@ -131,7 +131,7 @@ Complete the HyperMemory OAuth flow when prompted, then start a new session.
 ### 3. Install HyperColab
 
 ```bash
-/plugin install hypercolab
+/plugin install hypercolab@hypermemory-plugins
 ```
 
 Complete the HyperColab OAuth flow when prompted, then start a new session
@@ -340,7 +340,7 @@ shell output, complete transcripts, or hidden model reasoning.
 
 ```mermaid
 flowchart TB
-    Repo["hypermemory-ai/hm-plugins-claude"] --> Catalog["hypermemory-ai marketplace"]
+    Repo["hypermemory-ai/hm-plugins-claude"] --> Catalog["hypermemory-plugins marketplace"]
     Catalog --> HM["HyperMemory plugin"]
     Catalog --> HC["HyperColab plugin"]
 
@@ -435,9 +435,9 @@ Refresh the Git marketplace snapshot, reinstall the plugins you use, and start
 a new session:
 
 ```bash
-/plugin marketplace upgrade hypermemory-ai
-/plugin install hypermemory
-/plugin install hypercolab
+/plugin marketplace update hypermemory-plugins
+/plugin update hypermemory@hypermemory-plugins
+/plugin update hypercolab@hypermemory-plugins
 ```
 
 Review hooks again if their definitions changed.
@@ -445,9 +445,9 @@ Review hooks again if their definitions changed.
 ## Removing
 
 ```bash
-/plugin remove hypermemory
-/plugin remove hypercolab
-/plugin marketplace remove hypermemory-ai
+/plugin remove hypermemory@hypermemory-plugins
+/plugin remove hypercolab@hypermemory-plugins
+/plugin marketplace remove hypermemory-plugins
 ```
 
 Removing a plugin or marketplace does not delete durable data already stored by
@@ -469,8 +469,8 @@ with the same marketplace name, run from the repository root:
 
 ```bash
 /plugin marketplace add .
-/plugin install hypermemory
-/plugin install hypercolab
+/plugin install hypermemory@hypermemory-plugins
+/plugin install hypercolab@hypermemory-plugins
 ```
 
 Start a new session after reinstalling so Claude Code loads the updated skills
@@ -484,8 +484,8 @@ That is expected. Registering the marketplace adds the catalog only. Install a
 plugin explicitly:
 
 ```bash
-/plugin install hypermemory
-/plugin install hypercolab
+/plugin install hypermemory@hypermemory-plugins
+/plugin install hypercolab@hypermemory-plugins
 ```
 
 ### MCP tools are missing
@@ -522,8 +522,8 @@ bypass a valid ownership conflict.
 Refresh and reinstall:
 
 ```bash
-/plugin marketplace upgrade hypermemory-ai
-/plugin install <plugin-name>
+/plugin marketplace update hypermemory-plugins
+/plugin update <plugin-name>@hypermemory-plugins
 ```
 
 Then start a new session. Claude Code loads an installed marketplace snapshot
@@ -533,7 +533,7 @@ rather than executing directly from an arbitrary source checkout.
 
 ### Is the marketplace itself a plugin?
 
-No. The marketplace is the catalog named `hypermemory-ai`. It currently lists
+No. The marketplace is the catalog named `hypermemory-plugins`. It currently lists
 the separate `hypermemory` and `hypercolab` plugins.
 
 ### Do I need both plugins?
