@@ -1,6 +1,6 @@
 ---
 name: hypermemory
-version: 0.6.8
+version: 0.6.9
 description: >-
   Persistent memory graph for AI agents via HyperMemory MCP tools. Recall
   context, store facts and relationships, enforce hyperedge policy, and
@@ -208,6 +208,128 @@ is clear, do not pin a style contract.
 
 ---
 
+## Data Envelope Conventions
+
+Every `hm_store` and `hm_update` SHOULD include a `data` payload appropriate
+to the node's type. Descriptions carry the narrative; data carries the
+structured, queryable facts. A node with a rich description but null data is
+findable but not machine-queryable.
+
+**Consistency rule:** Recalled nodes are live schema references. When storing
+or updating a node, find a recalled node of the same type whose data payload
+is non-null and match its field structure — same keys, same value shapes,
+same level of detail. The existing graph is the primary schema; the
+conventions below are the fallback when no recalled node of that type has
+data yet.
+
+### decision
+
+```json
+{
+  "chosen": "what was selected",
+  "rejected": ["alternatives considered"],
+  "rationale": "why this choice was made",
+  "date": "ISO date or descriptive period",
+  "reversibility": "low | medium | high",
+  "scope": "what this decision governs"
+}
+```
+
+### event
+
+```json
+{
+  "date": "ISO date or descriptive period",
+  "participants": ["who or what was involved"],
+  "outcome": "what resulted",
+  "trigger": "what caused this event"
+}
+```
+
+### concept
+
+```json
+{
+  "domain": "field or subject area",
+  "period": "time period if applicable",
+  "key_attributes": ["defining characteristics"],
+  "distinctions": "how it differs from similar concepts"
+}
+```
+
+### person
+
+```json
+{
+  "role": "primary role or title",
+  "organization": "affiliation",
+  "expertise": ["domains of knowledge"],
+  "relationship_to_user": "how the user relates to this person"
+}
+```
+
+### project
+
+```json
+{
+  "goals": ["what the project aims to achieve"],
+  "constraints": ["limitations or requirements"],
+  "status": "current state",
+  "stack": ["key technologies"],
+  "repository": "path or URL if applicable"
+}
+```
+
+### technology
+
+```json
+{
+  "purpose": "why it was chosen and what role it serves",
+  "deployment": "how and where it runs",
+  "alternatives_considered": ["what else was evaluated"]
+}
+```
+
+### preference (non-style)
+
+```json
+{
+  "scope": "what this preference applies to",
+  "strength": "mandatory | preferred | situational",
+  "rules": ["actionable do-rules"],
+  "avoid": ["explicit anti-patterns"]
+}
+```
+
+### fact
+
+```json
+{
+  "source": "where this was learned",
+  "confidence": "high | medium | low",
+  "date_learned": "ISO date or period",
+  "scope": "what this fact applies to"
+}
+```
+
+### artifact
+
+```json
+{
+  "artifact_type": "document | code | image | recording | dataset",
+  "location": "path, URL, or reference",
+  "status": "current | superseded | draft",
+  "produced_by": "what process or decision created this"
+}
+```
+
+Fields are conventions, not mandatory schemas. Omit fields that genuinely
+don't apply. Add domain-specific fields when the convention set doesn't
+capture something important. The goal is queryable structure, not checkbox
+compliance.
+
+---
+
 ## Relationships
 
 Always include at least one relationship on `hm_store`. Orphan nodes (zero edges) are a hygiene failure.
@@ -257,6 +379,68 @@ Hyperedges mean **joint necessity** — removing any participant changes the mea
 **Removal test:** If the group still makes sense after removing one node, use binary edges instead.
 
 **5+ nodes in one joint fact:** one hyperedge with all `participant_keys` — not a mesh of pairs or overlapping triads.
+
+---
+
+## Hyperedge opportunity recognition
+
+The policy above defines valid hyperedges. This section defines when to
+**create** them — sparingly.
+
+**Principle:** A hyperedge is an organizing structure a couple of orders of
+magnitude broader than its individual participants. It represents a domain,
+a system, or a corpus — not just "these nodes are related." A graph should
+have far fewer hyperedges than nodes. If you're creating hyperedges as often
+as binary edges, you're bloating.
+
+**When a hyperedge is warranted:**
+
+A cluster of 5+ nodes has accumulated around a shared domain or system, AND
+the hyperedge would name something at a higher level of abstraction than any
+single participant — a research domain, a product architecture, a deployment
+stack. The hyperedge says "these things together constitute X" where X is a
+concept none of the participants express individually.
+
+**Recognized patterns:**
+
+| Pattern | Minimum | Label style |
+|---------|---------|-------------|
+| Research corpus | 5+ concept/event/person nodes from one sustained investigation | `{topic}_research_corpus` |
+| Product architecture | project + 3+ core decisions/components that define the product | `{project}_core_architecture` |
+| Technology stack | 3+ technologies that deploy as one unit and break if separated | `{project}_platform_stack` |
+| Style system | 3+ style/preference nodes governing one scope | `{scope}_style_system` |
+
+**When NOT to create:**
+
+- Don't create a hyperedge for every small cluster — binary edges handle
+  groups of 2–4 nodes that merely relate to each other.
+- Don't create a hyperedge that restates what a hub node already expresses.
+  If `project_foo` already describes the system, a hyperedge adding
+  "project_foo and its components" says nothing new.
+- Don't create hyperedges per-turn. Evaluate only after a domain has
+  accumulated enough nodes across multiple turns to warrant high-level
+  organization.
+
+Every proposed hyperedge must pass the removal test and name something
+at a higher abstraction level than its participants.
+
+---
+
+## Granularity and structure
+
+Prefer many specific nodes over few summary nodes. When work produces a list
+of discrete entities — people, tools, professions, components — each one is
+its own node, not a line item in a parent's description. Key nodes by what
+they are (`profession_yamabushi`, `person_manase_dosan`), not by how they
+were discovered (`research_batch_item_3`).
+
+Connect peers to peers. A relationship between two sibling nodes is worth more
+than both of them pointing at a shared hub. Hub nodes are acceptable as entry
+points but the real graph value is in the cross-links between the entities
+themselves.
+
+Don't conserve nodes. A graph with 200 well-connected nodes recalls better
+than one with 5 summaries.
 
 ---
 
