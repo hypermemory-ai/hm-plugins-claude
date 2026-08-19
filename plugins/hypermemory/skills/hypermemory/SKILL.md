@@ -1,6 +1,6 @@
 ---
 name: hypermemory
-version: 0.7.0
+version: 0.7.1
 description: >-
   Persistent memory graph for AI agents via HyperMemory MCP tools. Recall
   context on every substantive message and dispatch a fire-and-forget
