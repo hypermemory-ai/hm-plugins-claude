@@ -337,7 +337,7 @@ Always include at least one relationship on `hm_store`. Orphan nodes (zero edges
 Describe **why** nodes connect — not bare verbs.
 
 ```json
-{"relationships": [{"to_key": "tech_qdrant", "relationship": "search pipeline depends on Qdrant for hybrid vector retrieval"}]}
+{"relationships": [{"to_key": "tech_neo4j", "relationship": "knowledge graph persisted in Neo4j for relationship traversal"}]}
 ```
 
 ### Binary edge spec
@@ -353,7 +353,7 @@ Omit `from_key` on `hm_store` — defaults to the stored node's key. Use `to_key
 ```json
 {
   "relationships": [{
-    "participant_keys": ["project_hypermemory", "tech_surrealdb", "tech_qdrant", "tech_redis"],
+    "participant_keys": ["project_hypermemory", "tech_postgres", "tech_neo4j", "tech_redis"],
     "relationship": "platform_component_assembly",
     "description": "These four components ship as one deployable platform unit; removing any one breaks the production stack definition"
   }]

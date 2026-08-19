@@ -73,7 +73,7 @@ Always include at least one relationship on `hm_store`. Describe **why** nodes
 connect, not bare verbs.
 
 ```json
-{"relationships": [{"to_key": "tech_qdrant", "relationship": "search pipeline depends on Qdrant for hybrid vector retrieval"}]}
+{"relationships": [{"to_key": "tech_neo4j", "relationship": "knowledge graph persisted in Neo4j for relationship traversal"}]}
 ```
 
 For 3+ participants sharing a joint-necessity fact, use a hyperedge with
