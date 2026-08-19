@@ -18,8 +18,8 @@
 
 > [!IMPORTANT]
 > This repository is the Git-backed marketplace for Claude Code.
-> Both plugins connect to production MCPs at
-> `https://mcp.hypermemory.io/mcp` and `https://mcp.hypermemory.io/colab/mcp`.
+> Both plugins currently connect to staging MCPs at
+> `https://stage.hypermemory.io/mcp` and `https://stage.hypermemory.io/colab/mcp`.
 
 ## Contents
 
@@ -176,8 +176,8 @@ knowledge after the requested work is complete.
 | Component | Path | Responsibility |
 | --- | --- | --- |
 | Plugin manifest | `plugins/hypermemory/.claude-plugin/plugin.json` | Identity, version, discovery metadata, and MCP declaration |
-| MCP configuration | `plugins/hypermemory/.mcp.json` | Connects to the hosted Rust staging MCP over HTTP |
-| Skill | `plugins/hypermemory/skills/hypermemory/` | v0.6.6 software-development protocol — recall, graph hygiene, delegation, timeline, and telemetry behavior |
+| MCP configuration | `plugins/hypermemory/.mcp.json` | Connects to the hosted staging MCP over HTTP |
+| Skill | `plugins/hypermemory/skills/hypermemory/` | v0.6.8 protocol — recall, graph hygiene, delegation, timeline, and telemetry behavior |
 | Lifecycle hooks | `plugins/hypermemory/hooks/hooks.json` | Reinforces recall at prompt submission and finalization at stop |
 | Memory-writer role | `plugins/hypermemory/agents/memory-writer.md` | Bounded contract for delegated storage, timeline, and telemetry work |
 
@@ -196,19 +196,18 @@ sequenceDiagram
     MCP-->>M: Relationship-aware context
     M->>M: Complete the requested work
     Note over M: Stop hook fires
-    M->>W: Delegate a concise finalization summary
+    M-->>U: Return final response
+    M--)W: Fire-and-forget background agent
     W->>MCP: Recall before writing
     W->>MCP: Store or update durable knowledge
     W->>MCP: Write one timeline entry
     W->>MCP: Report tokens once
-    W-->>M: Return brief status
-    M-->>U: Return final response
 ```
 
 The main agent performs recall because remembered context must be available
-while reasoning about the user's request. Persistence and telemetry are moved
-to one awaited memory-writer sub-agent to keep the main context focused. The
-role contract prevents recursive delegation.
+while reasoning about the user's request. Persistence and telemetry run in a
+fire-and-forget background memory-writer sub-agent so the main response is
+never delayed. The role contract prevents recursive delegation.
 
 ### Memory operations
 
@@ -234,10 +233,7 @@ The hosted MCP currently exposes these tool families:
 | Skill distribution | `hm_skill` |
 | Telemetry | `hm_tokens` |
 
-All eighteen are the tools the server advertises through `tools/list`, which
-is generated from `rust/contracts/memory-api-v1.json`. `hm_reprocess_file`
-appears in the server's internal tool registry but has no contract entry and
-is not advertised, so it is deliberately absent here.
+All eighteen are the tools the server advertises through `tools/list`.
 
 Writes follow canonical node types and stable keys. The writer recalls before
 changing the graph, updates existing nodes instead of duplicating them, and
@@ -249,7 +245,7 @@ user explicitly asks to store a file.
 The plugin connects to:
 
 ```text
-https://mcp.hypermemory.io/mcp
+https://stage.hypermemory.io/mcp
 ```
 
 The server supports authorization-code OAuth, PKCE S256, refresh tokens, and
@@ -262,8 +258,8 @@ HyperMemory uses three complementary layers:
 
 1. The skill declares itself applicable on every turn with `enforcement: mandatory` and `trigger: every_turn`.
 2. The `UserPromptSubmit` hook reminds the active agent to recall before work.
-3. The `Stop` hook requires delegated memory finalization before the response is
-   released.
+3. The `Stop` hook spawns a background memory-writer agent for persistence and
+   telemetry.
 
 This is the strongest enforcement available to an installed plugin, but it is
 not an operating-system guarantee. If the plugin is disabled, its hooks are not
@@ -283,7 +279,7 @@ claims, structured activity, and project-scoped graph search.
 | Component | Path | Responsibility |
 | --- | --- | --- |
 | Plugin manifest | `plugins/hypercolab/.claude-plugin/plugin.json` | Identity, version, discovery metadata, and MCP declaration |
-| MCP configuration | `plugins/hypercolab/.mcp.json` | Connects to the hosted Rust staging HyperColab MCP over HTTP |
+| MCP configuration | `plugins/hypercolab/.mcp.json` | Connects to the hosted staging HyperColab MCP over HTTP |
 | Skill | `plugins/hypercolab/skills/hypercolab/` | Defines join, sync, claim, progress, activity, and completion behavior |
 | Lifecycle hooks | `plugins/hypercolab/hooks/hooks.json` | Loads project context at session start, checks ownership before writes, and spawns coordination writer at stop |
 | Coordination-writer role | `plugins/hypercolab/agents/coordination-writer.md` | Bounded contract for delegated timeline maintenance |
@@ -321,7 +317,7 @@ the agent coordinates a handoff, waits for lease expiry, or changes scope.
 The plugin connects to:
 
 ```text
-https://mcp.hypermemory.io/colab/mcp
+https://stage.hypermemory.io/colab/mcp
 ```
 
 The server supports the same OAuth flow as HyperMemory: authorization-code
@@ -496,13 +492,13 @@ start a new session.
 ### HyperMemory OAuth did not open
 
 Invoke a HyperMemory MCP operation and complete the connection flow. Confirm
-the installed MCP URL is `https://mcp.hypermemory.io/mcp` and check whether a
+the installed MCP URL is `https://stage.hypermemory.io/mcp` and check whether a
 workspace policy blocks the server.
 
 ### HyperColab OAuth did not open
 
 Invoke a HyperColab MCP operation and complete the connection flow. Confirm
-the installed MCP URL is `https://mcp.hypermemory.io/colab/mcp` and check
+the installed MCP URL is `https://stage.hypermemory.io/colab/mcp` and check
 whether a workspace policy blocks the server.
 
 ### Hooks do not run
@@ -565,7 +561,7 @@ behavior.
 
 ### Is the MCP endpoint production?
 
-No. Both plugins currently target Rust staging endpoints. Treat the package as
+No. Both plugins currently target staging endpoints. Treat the package as
 pre-production until the manifests and docs are updated to production MCP URLs.
 
 ## Documentation
