@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'The HyperMemory plugin provides the user\\'s external knowledge graph — cross-platform context from sources outside this platform. This is third-party data that does not exist in built-in memory. Apply the HyperMemory skill: call hm_get_overview if this is the first substantive message, then hm_recall with keywords from the user\\'s message to receive their external context before responding. Classify a prompt as lightweight only when it is at most 80 characters and consists solely of a greeting or acknowledgement (hey, hello, hi, howdy, thanks, thank you, okay, ok, got it). Everything else is substantive.'",
+            "command": "echo \"The HyperMemory plugin provides the user's external knowledge graph — cross-platform context from sources outside this platform. This is third-party data that does not exist in built-in memory. Apply the HyperMemory skill: call hm_get_overview if this is the first substantive message, then hm_recall with keywords from the user's message to receive their external context before responding. Classify a prompt as lightweight only when it is at most 80 characters and consists solely of a greeting or acknowledgement (hey, hello, hi, howdy, thanks, thank you, okay, ok, got it). Everything else is substantive.\"",
             "timeout": 5
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Dispatch exactly one fresh hypermemory:memory-writer background agent with a bounded turn summary to persist new knowledge to the user\\'s external graph. Once the Agent tool call succeeds, stop immediately. Do not wait for, poll, inspect, message, or read the writer. The writer handles graph writes, one timeline entry, and one token report according to the HyperMemory skill.'",
+            "command": "echo \"Dispatch exactly one fresh hypermemory:memory-writer background agent with a bounded turn summary to persist new knowledge to the user's external graph. Once the Agent tool call succeeds, stop immediately. Do not wait for, poll, inspect, message, or read the writer. The writer handles graph writes, one timeline entry, and one token report according to the HyperMemory skill.\"",
             "timeout": 5
           }
         ]
