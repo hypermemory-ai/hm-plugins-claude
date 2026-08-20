@@ -1,6 +1,6 @@
 ---
 name: hypermemory
-version: 0.7.1
+version: 0.7.2
 description: >-
   Cross-platform context provider — use on EVERY message before responding,
   any topic. Step 1: call hm_recall to receive the user's external context
