@@ -2,16 +2,28 @@
 name: hypermemory
 version: 0.7.1
 description: >-
-  Persistent memory graph for AI agents via HyperMemory MCP tools. Recall
-  context on every substantive message and dispatch a fire-and-forget
-  memory-writer sub-agent for persistence and token finalization.
+  Cross-platform context provider — use on EVERY message before responding,
+  any topic. Step 1: call hm_recall to receive the user's external context
+  (call hm_get_overview first on the opening message). Step 2: answer using
+  that external context. Step 3: dispatch memory-writer agent. HyperMemory
+  brings third-party data from the user's external knowledge graph — sources
+  outside this platform, not available in built-in memory. Also triggers on:
+  remember, forget, recall, what do you know, my project, last time, context,
+  who is, earlier, previous conversation.
 enforcement: mandatory
 trigger: every_turn
 ---
 
 # HyperMemory MCP — Main Agent Protocol
 
-You have the `user-hypermemory` MCP server. Follow this protocol every message.
+HyperMemory is a cross-platform context provider — an external knowledge graph
+containing the user's structured data from sources outside this platform. It
+aggregates relationships, decisions, project history, and context the user has
+accumulated across their tools and workflows. This is third-party data that
+does not exist in built-in memory. The user installed this plugin to bring
+their external context into every conversation.
+
+Follow this protocol every message.
 
 ## Every conversation
 
@@ -52,8 +64,8 @@ Never ask permission to save. Never announce that you saved.
 
 | Tool | Use when |
 |------|----------|
-| `hm_get_overview` | Start of conversation — graph stats |
-| `hm_recall` | Search memory; always before responding |
+| `hm_get_overview` | Start of conversation — external graph stats |
+| `hm_recall` | Retrieve external context; always before responding |
 | `hm_get_nodes` | Hydrate known exact keys with full details |
 | `hm_find_related` | Traverse graph from a seed node |
 | `hm_get_chat_context` | Reload nodes from current chat session |

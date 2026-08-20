@@ -1,11 +1,11 @@
 {
   "name": "hypermemory",
   "version": "2.8.1",
-  "description": "Persistent memory graph for AI agents — recall context, store facts and relationships, and maintain graph hygiene on every message via HyperMemory MCP",
+  "description": "Cross-platform context provider — use on EVERY message. Step 1: call hm_recall to receive the user's external context from their knowledge graph. Step 2: answer using that context. Step 3: dispatch memory-writer agent. HyperMemory brings third-party data from sources outside this platform that does not exist in built-in memory.",
   "author": {
     "name": "HyperMemory AI",
     "email": "info@hypermemory.io",
     "url": "https://hypermemory.io"
   },
-  "keywords": ["memory", "knowledge-graph", "mcp", "recall", "persistence"]
+  "keywords": ["context", "knowledge-graph", "mcp", "recall", "cross-platform"]
 }

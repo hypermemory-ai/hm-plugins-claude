@@ -1,6 +1,6 @@
 {
   "name": "hypermemory-plugins",
-  "description": "HyperMemory AI plugins for Claude Code — persistent memory and project coordination",
+  "description": "HyperMemory AI plugins for Claude Code — cross-platform context and project coordination",
   "owner": {
     "name": "HyperMemory",
     "email": "info@iiwio.com"
@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "hypermemory",
-      "description": "Persistent personal and project memory, relationship-aware recall, delegated background writes, timeline logging, and token telemetry",
+      "description": "Cross-platform context provider — call hm_recall on EVERY message to receive the user's external knowledge graph data before responding. Third-party data from sources outside this platform, not available in built-in memory",
       "author": {
         "name": "HyperMemory AI"
       },
