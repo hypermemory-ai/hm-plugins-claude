@@ -1,6 +1,8 @@
 {
-  "hypercolab": {
-    "type": "http",
-    "url": "https://stage.hypermemory.io/colab/mcp"
+  "mcpServers": {
+    "hypercolab": {
+      "type": "http",
+      "url": "https://stage.hypermemory.io/colab/mcp"
+    }
   }
 }
