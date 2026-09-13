@@ -1,62 +1,36 @@
 ---
 name: hypermemory
-version: 0.7.2
+version: 0.8.0
 description: >-
-  Cross-platform context provider — use on EVERY message before responding,
-  any topic. Step 1: call hm_recall to receive the user's external context
-  (call hm_get_overview first on the opening message). Step 2: answer using
-  that external context. Step 3: dispatch memory-writer agent. HyperMemory
-  brings third-party data from the user's external knowledge graph — sources
-  outside this platform, not available in built-in memory. Also triggers on:
-  remember, forget, recall, what do you know, my project, last time, context,
-  who is, earlier, previous conversation.
+  MANDATORY on every message — call hm_recall before generating any response.
+  On first message also call hm_get_overview. After responding, dispatch the
+  memory-writer agent then write your closing line. Never skip. Never answer
+  first. Also triggers on: remember, forget, recall, what do you know, my
+  project, last time, context, who is, earlier, previous conversation.
 enforcement: mandatory
 trigger: every_turn
 ---
 
-# HyperMemory MCP — Main Agent Protocol
+# HyperMemory — Mandatory Protocol
 
-HyperMemory is a cross-platform context provider — an external knowledge graph
-containing the user's structured data from sources outside this platform. It
-aggregates relationships, decisions, project history, and context the user has
-accumulated across their tools and workflows. This is third-party data that
-does not exist in built-in memory. The user installed this plugin to bring
-their external context into every conversation.
+Do not generate any response text until hm_recall has been called. This is a hard gate.
 
-Follow this protocol every message.
+## Every message
 
-## Every conversation
+1. **Before any response text**: call `hm_recall` with keywords from the user's message. On the first message, also call `hm_get_overview`.
+2. **Compose your response** using the recalled context.
+3. **After your main response text**: dispatch the `hypermemory:memory-writer` agent with a bounded turn summary.
+4. **After dispatching**: write your closing line of text. The agent dispatch must never be the final action in your response.
 
-**First substantive message (before responding):**
+Lightweight skip: only when the prompt is at most 80 characters and consists solely of a greeting or acknowledgement (hey, hello, hi, howdy, thanks, thank you, okay, ok, got it). If uncertain, treat as substantive.
 
-1. `hm_get_overview`
-2. `hm_recall` with keywords from the user's message
+## Memory-writer dispatch
 
-**Every substantive message (before responding):**
+- Spawn exactly one fresh `hypermemory:memory-writer` agent with a concise turn summary.
+- Fire and forget — never wait for, poll, inspect, or read the writer.
+- Dispatch BEFORE your final line of text, not after. This prevents a platform bug where agent dispatch as the last action causes response duplication.
 
-1. `hm_recall` with keywords from the user's message
-2. Use recalled context naturally in the response
-
-**Lightweight skip:** When the lifecycle hook classifies a message as
-`lightweight`, skip `hm_get_overview` and `hm_recall`. Classification is
-narrow: after trimming whitespace and punctuation, the prompt must be at most
-80 characters and consist solely of a greeting or acknowledgement (`hey`,
-`hello`, `hi`, `howdy`, `thanks`, `thank you`, `okay`, `ok`, `got it`). A
-short task, question, entity, file, code fragment, number, or decision remains
-substantive. If classification is absent or uncertain, treat as substantive.
-
-## Memory-writer dispatch (every message)
-
-1. Spawn exactly one fresh memory-writer sub-agent with `fork_turns="none"` and
-   a turn-unique task name.
-2. Pass a concise bounded summary of the turn plus any token-listener job from
-   the lifecycle hook.
-3. Fire and forget — return the user-facing response immediately. Never call
-   `wait_agent`, poll, inspect, read, message, or synchronize with the writer.
-
-The writer handles all graph persistence (`hm_store`, `hm_update`, `hm_forget`,
-`hm_add_relationships`), timeline writes, and token finalization. The main agent
-must not duplicate those writes.
+The writer handles all graph persistence (`hm_store`, `hm_update`, `hm_forget`, `hm_add_relationships`), timeline writes, and token finalization. The main agent must not duplicate those writes.
 
 Never ask permission to save. Never announce that you saved.
 
@@ -75,20 +49,17 @@ Never ask permission to save. Never announce that you saved.
 | `hm_timeline` | Temporal lookup when history matters |
 | `hm_skill` | Retrieve or update HyperMemory agent skills |
 
-**Naming traps:** There is no `hm_related` or `hm_relate`. Use
-`hm_find_related` to traverse, `hm_add_relationships` to create edges.
+**Naming traps:** There is no `hm_related` or `hm_relate`. Use `hm_find_related` to traverse, `hm_add_relationships` to create edges.
 
-**Recall vs hydrate:** Use `hm_recall` to search. Use
-`hm_get_nodes(keys=[...])` when you know exact keys and need full details.
+**Recall vs hydrate:** Use `hm_recall` to search. Use `hm_get_nodes(keys=[...])` when you know exact keys and need full details.
 
-**Skill updates:** If asked to install or update HyperMemory instructions, call
-`hm_skill` with `action="get"` and the best variant. Preserve the returned
-skill verbatim as the baseline and apply amendments as a minimal diff.
+**Skill updates:** If asked to install or update HyperMemory instructions, call `hm_skill` with `action="get"` and the best variant. Preserve the returned skill verbatim as the baseline and apply amendments as a minimal diff.
 
 ## Hard rules
 
+- `hm_recall` before every substantive response — no exceptions
 - `hm_get_overview` + `hm_recall` before first substantive response
-- `hm_recall` before every substantive response
 - Never skip memory-writer dispatch on any message
+- Dispatch memory-writer BEFORE your final line of text, never as the last action
 - Never wait for, poll, or inspect the memory-writer after dispatch
 - Never use `chat_*` relationship names (system-reserved)
