@@ -378,12 +378,51 @@ The server auto-groups nodes touched in a chat after **5+ tool calls**.
 
 ## Token reporting
 
-Call `hm_tokens` exactly once per turn with:
+Call `hm_tokens` exactly once per turn. You MUST estimate and send actual
+token counts — a report with only segments and no token values is useless.
 
-- `segments`: weighted activity categories totaling exactly 100, estimated
-  from what the parent turn actually did.
-- `cost_quality`: `"self_estimated"` (you do not have provider billing data).
+### Required token fields
+
+Estimate the parent turn's token usage from the turn summary you received:
+
+- `input_tokens`: Estimate the total input context for every model invocation
+  in the parent turn. This includes system instructions, conversation history,
+  CLAUDE.md contents, tool definitions, recalled HyperMemory context, file
+  reads, and tool results. A typical Claude Code turn with tool use has
+  50,000–200,000 input tokens. Multi-tool turns with large file reads or
+  long conversations are higher.
+- `output_tokens`: Estimate from the parent's response text length plus tool
+  call arguments. A short response is 500–2,000 tokens. A response with
+  multiple tool calls and substantial text is 2,000–10,000.
+- `total_tokens`: Sum of `input_tokens` and `output_tokens`.
+- `measurement_quality`: `"self_estimated"` (Claude Code does not expose exact
+  token counts to the model).
+- `estimation_bias`: `"high"` when the turn involved many tool calls or large
+  context that makes undercounting likely. `"neutral"` for typical turns.
+  `"low"` only when the turn was minimal.
+
+Do not send `cost_usd` — cost calculation is handled server-side.
+Do not send `uncertainty_percentage` — uncertainty is handled server-side.
+
+### Other required fields
+
 - `ai_tool`: matching the parent agent (e.g. `"claude_code"`, `"claude_desktop"`).
+- `provider`: `"anthropic"` for Claude models.
+- `model`: the parent agent's model (e.g. `"claude-opus-4-6"`, `"claude-sonnet-5"`).
+- `session_id`: from the parent turn context.
+- `turn_sequence`: monotonically increasing per session.
+- `segments`: weighted activity categories totaling exactly 100.
+
+When multiple AI accounts are configured, include the matching `ai_account_id`.
+
+### Estimation guidelines
+
+- A single user message with one tool call: ~80,000 input, ~1,500 output.
+- A turn with 3–5 tool calls and file reads: ~120,000 input, ~4,000 output.
+- A heavy turn with 10+ tool calls, large file reads, agent dispatch:
+  ~200,000 input, ~8,000 output.
+- Scale up for long conversations (context grows each turn).
+- When uncertain, estimate higher rather than lower.
 
 ### Segment classification
 
@@ -406,16 +445,6 @@ Allowed categories: `reasoning`, `memory`, `context`, `doc_processing`,
 
 If classification is genuinely unavailable, use `unmatched: 100` explicitly.
 Omit zero-weight categories, keep categories unique, verify weights total 100.
-Do not use the removed `mem_ingest` or `mem_retrieve` categories.
-
-`estimation_bias` is exactly `low`, `neutral`, or `high`. Token and cost
-provenance are independent: exact tokens may use `cost_quality: self_estimated`.
-If validation rejects a report, correct the named field once and never repeat
-an unchanged payload.
-
-When multiple AI accounts are configured, include the matching `ai_account_id`.
-Without it, HyperMemory auto-assigns only when exactly one active account
-matches `ai_tool`.
 
 ### OpenRouter
 
@@ -423,11 +452,6 @@ For OpenRouter, submit client-visible token fields and weighted segments.
 HyperMemory treats them as provisional attribution and reconciles with
 management analytics for the OpenRouter key mapped to the user. Never invent
 provider-actual values.
-
-### Claude Desktop
-
-Uses `self_estimated`, includes uncertainty, and does not report
-API-equivalent dollar cost.
 
 ---
 
