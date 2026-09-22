@@ -46,8 +46,12 @@ Never ask permission to save. Never announce that you saved.
 | `hm_ingest` | Dense multi-entity text (writer cleans orphans) |
 | `hm_upload_file` | User explicitly asks to store a file (Pro+) |
 | `hm_list_files` | Query uploaded files |
+| `hm_update` | Update a node (`key`) or edge (`edge_id`). Edge endpoints/type are immutable |
+| `hm_forget` | Delete a node (`key`) or single edge (`edge_id`). Edge delete preserves nodes |
 | `hm_timeline` | Temporal lookup when history matters |
 | `hm_skill` | Retrieve or update HyperMemory agent skills |
+
+**Edge editing:** `hm_update` and `hm_forget` accept an optional `edge_id` (from read responses) to target a single edge. Pass `edge_version` for optimistic concurrency. To change edge endpoints or type, delete and recreate.
 
 **Naming traps:** There is no `hm_related` or `hm_relate`. Use `hm_find_related` to traverse, `hm_add_relationships` to create edges.
 

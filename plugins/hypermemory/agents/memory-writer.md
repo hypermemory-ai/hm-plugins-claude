@@ -30,6 +30,8 @@ auth warning is a generic notice, not a live status check.
      `node_type`, `data`, and at least one `relationship`.
    - If it exists but needs correction or expansion: `hm_update`.
    - If it is wrong: `hm_forget`.
+   - To update a single edge's description or data: `hm_update` with `edge_id`.
+   - To delete a single edge without removing its nodes: `hm_forget` with `edge_id`.
    - **Data is expected.** Every `hm_store` and `hm_update` should include a
      `data` payload. Use recalled nodes of the same type as the schema
      reference — match their field structure. If no recalled node of that type
