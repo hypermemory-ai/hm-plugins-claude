@@ -178,6 +178,7 @@ knowledge after the requested work is complete.
 | Plugin manifest | `plugins/hypermemory/.claude-plugin/plugin.json` | Identity, version, discovery metadata, and MCP declaration |
 | MCP configuration | `plugins/hypermemory/.mcp.json` | Connects to the hosted staging MCP over HTTP |
 | Skill | `plugins/hypermemory/skills/hypermemory/` | v0.6.8 protocol — recall, graph hygiene, delegation, timeline, and telemetry behavior |
+| Skill | `plugins/hypermemory/skills/memorize-full-chat/` | On-demand `/hypermemory:memorize-full-chat` — commits a whole conversation as one node per entity with peer cross-links |
 | Lifecycle hooks | `plugins/hypermemory/hooks/hooks.json` | Reinforces recall at prompt submission and finalization at stop |
 | Memory-writer role | `plugins/hypermemory/agents/memory-writer.md` | Bounded contract for delegated storage, timeline, and telemetry work |
 
@@ -372,7 +373,8 @@ repository-specific coordination state.
 │   │   ├── agents/                     # Memory-writer role contract
 │   │   ├── assets/                     # Marketplace icon and logo
 │   │   ├── hooks/hooks.json            # Claude Code lifecycle hooks
-│   │   └── skills/hypermemory/         # Memory workflow and references
+│   │   ├── skills/hypermemory/         # Memory workflow and references
+│   │   └── skills/memorize-full-chat/  # Whole-chat commit to the graph
 │   └── hypercolab/
 │       ├── .claude-plugin/plugin.json  # HyperColab manifest
 │       ├── .mcp.json                   # Hosted OAuth MCP connection

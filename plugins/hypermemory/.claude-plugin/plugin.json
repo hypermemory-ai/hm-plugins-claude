@@ -1,6 +1,6 @@
 {
   "name": "hypermemory",
-  "version": "2.10.0",
+  "version": "2.10.1",
   "description": "MANDATORY on every message. Call hm_recall before generating any response. On first message also call hm_get_overview. After responding, dispatch memory-writer agent before your closing line. Cross-platform context from the user's external knowledge graph — data that does not exist in built-in memory.",
   "author": {
     "name": "HyperMemory AI",
