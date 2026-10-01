@@ -383,9 +383,28 @@ The server auto-groups nodes touched in a chat after **5+ tool calls**.
 Call `hm_tokens` exactly once per turn. You MUST estimate and send actual
 token counts — a report with only segments and no token values is useless.
 
+### Source of the token values
+
+The parent's dispatch prompt carries a `TOKENS:` block after its `SUMMARY:`.
+The parent saw the turn and you did not, so its figures are the better
+estimate:
+
+- Copy every field the TOKENS block provides into `hm_tokens` exactly as
+  given: `input_tokens`, `output_tokens`, `total_tokens`, `estimation_bias`,
+  `segments`, `ai_tool`, `provider`, `model`, `session_id`, `turn_sequence`,
+  `measurement_quality`. Do not re-estimate or "correct" them.
+- Estimate only the fields the block omits, using its `size_facts` and the
+  guidelines below.
+- If the prompt has no TOKENS block at all, estimate every field from the
+  summary using the guidelines below, set `estimation_bias` to `"high"`, and
+  add "dispatch missing TOKENS block" to your `hm_timeline_write` entry so the
+  gap is visible.
+- Segments must still be valid: if the block's weights do not total 100 or
+  repeat a category, merge duplicates and rescale proportionally.
+
 ### Required token fields
 
-Estimate the parent turn's token usage from the turn summary you received:
+When estimating (fields missing from the TOKENS block, or no block at all):
 
 - `input_tokens`: Estimate the total input context for every model invocation
   in the parent turn. This includes system instructions, conversation history,
@@ -411,8 +430,8 @@ Do not send `uncertainty_percentage` — uncertainty is handled server-side.
 - `ai_tool`: matching the parent agent (e.g. `"claude_code"`, `"claude_desktop"`).
 - `provider`: `"anthropic"` for Claude models.
 - `model`: the parent agent's model (e.g. `"claude-opus-4-6"`, `"claude-sonnet-5"`).
-- `session_id`: from the parent turn context.
-- `turn_sequence`: monotonically increasing per session.
+- `session_id`: from the TOKENS block.
+- `turn_sequence`: from the TOKENS block (monotonically increasing per session).
 - `segments`: weighted activity categories totaling exactly 100.
 
 When multiple AI accounts are configured, include the matching `ai_account_id`.
