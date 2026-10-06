@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stop hook: refuse to end a turn until HyperMemory's memory writer has been dispatched.
 
-A turn starts at the last prompt Ken typed (slash commands included). Automated
+A turn starts at the last prompt the user typed (slash commands included). Automated
 background-task notifications and compaction summaries are not turns. The turn
 may end only when it contains an Agent call with subagent_type
 hypermemory:memory-writer, and that call is followed by assistant text (the
