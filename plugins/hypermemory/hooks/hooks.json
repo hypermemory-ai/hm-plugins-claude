@@ -1,5 +1,5 @@
 {
-  "description": "HyperMemory plugin — mandatory recall before every response",
+  "description": "HyperMemory plugin \u2014 skill injected every prompt, writer dispatch required at stop",
   "hooks": {
     "SessionStart": [
       {
@@ -8,6 +8,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/setup-claude-md.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-skill.sh\" \"${CLAUDE_PLUGIN_ROOT}\"",
+            "timeout": 10
           }
         ]
       }
@@ -17,8 +22,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"MANDATORY: Call hm_recall NOW, before generating any response text. On first message also call hm_get_overview. Do not skip. Do not answer first. See CLAUDE.md for the full protocol.\"",
-            "timeout": 5
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-skill.sh\" \"${CLAUDE_PLUGIN_ROOT}\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/require-writer.py\"",
+            "timeout": 10
           }
         ]
       }

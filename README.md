@@ -179,7 +179,7 @@ knowledge after the requested work is complete.
 | MCP configuration | `plugins/hypermemory/.mcp.json` | Connects to the hosted staging MCP over HTTP |
 | Skill | `plugins/hypermemory/skills/hypermemory/` | v0.6.8 protocol — recall, graph hygiene, delegation, timeline, and telemetry behavior |
 | Skill | `plugins/hypermemory/skills/memorize-full-chat/` | On-demand `/hypermemory:memorize-full-chat` — commits a whole conversation as one node per entity with peer cross-links |
-| Lifecycle hooks | `plugins/hypermemory/hooks/hooks.json` | Reinforces recall at prompt submission and finalization at stop |
+| Lifecycle hooks | `plugins/hypermemory/hooks/hooks.json` | Injects the full HyperMemory skill at session start and on every prompt (`inject-skill.sh`); blocks a turn from ending without a memory-writer dispatch followed by closing text (`require-writer.py`) |
 | Memory-writer role | `plugins/hypermemory/agents/memory-writer.md` | Bounded contract for delegated storage, timeline, and telemetry work |
 
 ### Turn lifecycle
