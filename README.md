@@ -18,8 +18,8 @@
 
 > [!IMPORTANT]
 > This repository is the Git-backed marketplace for Claude Code.
-> Both plugins currently connect to staging MCPs at
-> `https://stage.hypermemory.io/mcp` and `https://stage.hypermemory.io/colab/mcp`.
+> HyperMemory connects to the production MCP at `https://api.hypermemory.io/mcp`.
+> HyperColab connects to `https://stage.hypermemory.io/colab/mcp`.
 
 ## Contents
 
@@ -246,7 +246,7 @@ user explicitly asks to store a file.
 The plugin connects to:
 
 ```text
-https://stage.hypermemory.io/mcp
+https://api.hypermemory.io/mcp
 ```
 
 The server supports authorization-code OAuth, PKCE S256, refresh tokens, and
@@ -494,7 +494,7 @@ start a new session.
 ### HyperMemory OAuth did not open
 
 Invoke a HyperMemory MCP operation and complete the connection flow. Confirm
-the installed MCP URL is `https://stage.hypermemory.io/mcp` and check whether a
+the installed MCP URL is `https://api.hypermemory.io/mcp` and check whether a
 workspace policy blocks the server.
 
 ### HyperColab OAuth did not open

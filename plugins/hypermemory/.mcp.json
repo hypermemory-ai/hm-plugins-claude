@@ -1,6 +1,6 @@
 {
   "hypermemory": {
     "type": "http",
-    "url": "https://stage.hypermemory.io/mcp"
+    "url": "https://api.hypermemory.io/mcp"
   }
 }
