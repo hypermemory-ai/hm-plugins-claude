@@ -19,7 +19,8 @@
 > [!IMPORTANT]
 > This repository is the Git-backed marketplace for Claude Code.
 > HyperMemory connects to the production MCP at `https://api.hypermemory.io/mcp`.
-> HyperColab connects to `https://stage.hypermemory.io/colab/mcp`.
+> HyperColab still connects to the staging MCP at
+> `https://stage.hypermemory.io/colab/mcp` until a production endpoint exists.
 
 ## Contents
 
@@ -32,7 +33,9 @@
 - [HyperColab](#hypercolab)
 - [Combined architecture](#combined-architecture)
 - [Repository layout](#repository-layout)
+- [Agent role packaging](#agent-role-packaging)
 - [Authentication and secrets](#authentication-and-secrets)
+- [Hooks and permissions](#hooks-and-permissions)
 - [Updating](#updating)
 - [Removing](#removing)
 - [Development](#development)
@@ -48,8 +51,8 @@ installable Claude Code plugins:
 
 | Plugin | Current version | Purpose |
 | --- | ---: | --- |
-| **HyperMemory** | `2.7.0` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
-| **HyperColab** | `2.7.0` | Shared project context, work ownership, path claims, project timelines, and multi-agent collision prevention |
+| **HyperMemory** | `2.13.0` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
+| **HyperColab** | `2.8.5` | Shared project context, work ownership, path claims, project timelines, and multi-agent collision prevention |
 
 The marketplace is named `hypermemory-plugins`. A marketplace is a catalog and
 source of plugins; registering it does **not** install either plugin. Users add
@@ -80,7 +83,7 @@ coordination, add coordination only where needed, or run both together.
 
 | Capability | HyperMemory | HyperColab |
 | --- | :---: | :---: |
-| Hosted OAuth MCP | Yes | Yes |
+| Hosted OAuth MCP | Yes (production) | Yes (staging) |
 | Bundled skill | Yes | Yes |
 | Claude Code lifecycle hooks | Yes | Yes |
 | Packaged sub-agent role contract | Memory writer | Coordination writer |
@@ -94,7 +97,7 @@ coordination, add coordination only where needed, or run both together.
 
 | Surface | HyperMemory | HyperColab |
 | --- | --- | --- |
-| Claude Code CLI | Full behavior after MCP authorization and hook trust | Full behavior after MCP authorization and hook trust |
+| Claude Code CLI | Full behavior after MCP authorization | Full behavior after MCP authorization |
 | Claude Code Desktop app | Full behavior — shares plugin config with CLI | Full behavior — shares plugin config with CLI |
 | Claude Desktop (Electron app) | MCP only — no hooks, agents, or skills; best-effort via CLAUDE.md | MCP only — same limitations as HyperMemory |
 | claude.ai (web) | MCP only — same limitations as Claude Desktop | MCP only — same limitations as Claude Desktop |
@@ -105,6 +108,7 @@ coordination, add coordination only where needed, or run both together.
 
 - Claude Code CLI or Claude Code Desktop app
 - A HyperMemory account
+- `bash` and `python3` on the `PATH` (used by the HyperMemory hooks)
 
 ### 1. Register the marketplace
 
@@ -137,17 +141,15 @@ Complete the HyperMemory OAuth flow when prompted, then start a new session.
 Complete the HyperColab OAuth flow when prompted, then start a new session
 inside a Git repository.
 
-### 4. Review and trust hooks
+### 4. Review the hooks
 
-In Claude Code, run:
+A plugin's hooks run as soon as the plugin is enabled. To see them, run:
 
 ```text
 /hooks
 ```
 
-Review each plugin's hook definition and trust the hooks you want to run. Claude
-Code does not automatically trust non-managed plugin hooks. Trust is tied to the
-exact hook definition, so changed hooks require review again after an update.
+This opens a read-only list of every configured hook, labeled with its source.
 
 ### 5. Verify the installation
 
@@ -176,10 +178,10 @@ knowledge after the requested work is complete.
 | Component | Path | Responsibility |
 | --- | --- | --- |
 | Plugin manifest | `plugins/hypermemory/.claude-plugin/plugin.json` | Identity, version, discovery metadata, and MCP declaration |
-| MCP configuration | `plugins/hypermemory/.mcp.json` | Connects to the hosted staging MCP over HTTP |
-| Skill | `plugins/hypermemory/skills/hypermemory/` | v0.6.8 protocol — recall, graph hygiene, delegation, timeline, and telemetry behavior |
+| MCP configuration | `plugins/hypermemory/.mcp.json` | Connects to the hosted production MCP over HTTP |
+| Skill | `plugins/hypermemory/skills/hypermemory/` | v0.9.0 protocol — recall before every response, memory-writer dispatch with a SUMMARY and TOKENS block, and tool reference |
 | Skill | `plugins/hypermemory/skills/memorize-full-chat/` | On-demand `/hypermemory:memorize-full-chat` — commits a whole conversation as one node per entity with peer cross-links |
-| Lifecycle hooks | `plugins/hypermemory/hooks/hooks.json` | Injects the full HyperMemory skill at session start and on every prompt (`inject-skill.sh`); blocks a turn from ending without a memory-writer dispatch followed by closing text (`require-writer.py`) — see [docs/enforcement-hooks.md](plugins/hypermemory/docs/enforcement-hooks.md) |
+| Lifecycle hooks | `plugins/hypermemory/hooks/hooks.json` | At session start, adds the HyperMemory block to the repository's `CLAUDE.md` if missing (`setup-claude-md.sh`); injects the full HyperMemory skill at session start and on every prompt (`inject-skill.sh`); blocks a turn from ending without a memory-writer dispatch followed by closing text (`require-writer.py`) — see [docs/enforcement-hooks.md](plugins/hypermemory/docs/enforcement-hooks.md) |
 | Memory-writer role | `plugins/hypermemory/agents/memory-writer.md` | Bounded contract for delegated storage, timeline, and telemetry work |
 
 ### Turn lifecycle
@@ -192,13 +194,14 @@ sequenceDiagram
     participant W as Memory-writer sub-agent
 
     U->>M: Submit a prompt
-    Note over M: UserPromptSubmit hook fires
-    M->>MCP: Overview and relevant recall
+    Note over M: UserPromptSubmit hook injects the skill
+    M->>MCP: hm_recall (plus hm_get_overview on the first message)
     MCP-->>M: Relationship-aware context
     M->>M: Complete the requested work
-    Note over M: Stop hook fires
-    M-->>U: Return final response
-    M--)W: Fire-and-forget background agent
+    M-->>U: Main response text
+    M--)W: Fire-and-forget dispatch with SUMMARY and TOKENS
+    M-->>U: Closing line
+    Note over M: Stop hook blocks the turn if the dispatch or closing line is missing
     W->>MCP: Recall before writing
     W->>MCP: Store or update durable knowledge
     W->>MCP: Write one timeline entry
@@ -208,7 +211,9 @@ sequenceDiagram
 The main agent performs recall because remembered context must be available
 while reasoning about the user's request. Persistence and telemetry run in a
 fire-and-forget background memory-writer sub-agent so the main response is
-never delayed. The role contract prevents recursive delegation.
+never delayed. The dispatch is never the last action: the main agent always
+follows it with a closing line. The role contract prevents recursive
+delegation.
 
 ### Memory operations
 
@@ -258,16 +263,17 @@ it does not contain or require a checked-in API key.
 HyperMemory uses three complementary layers:
 
 1. The skill declares itself applicable on every turn with `enforcement: mandatory` and `trigger: every_turn`.
-2. The `UserPromptSubmit` hook reminds the active agent to recall before work.
-3. The `Stop` hook spawns a background memory-writer agent for persistence and
-   telemetry.
+2. The `SessionStart` and `UserPromptSubmit` hooks inject the full skill text,
+   so it is in context at session start, after compaction, and on every prompt.
+3. The `Stop` hook refuses to let a turn end until the main agent has
+   dispatched the `hypermemory:memory-writer` agent and written a closing line
+   after it. Short greetings and acknowledgements are exempt.
 
 This is the strongest enforcement available to an installed plugin, but it is
-not an operating-system guarantee. If the plugin is disabled, its hooks are not
-trusted, hooks are disabled by policy, the MCP is unavailable, or the current
-surface cannot spawn sub-agents, behavior degrades accordingly. The skill
-defines a direct-write fallback when delegation is unavailable so memory is not
-silently abandoned.
+not an operating-system guarantee. If the plugin is disabled, hooks are
+disabled by policy, the MCP is unavailable, or the current surface cannot spawn
+sub-agents, behavior degrades accordingly. The main agent never writes to the
+graph itself, so on a surface without sub-agents nothing is persisted.
 
 ## HyperColab
 
@@ -282,22 +288,24 @@ claims, structured activity, and project-scoped graph search.
 | Plugin manifest | `plugins/hypercolab/.claude-plugin/plugin.json` | Identity, version, discovery metadata, and MCP declaration |
 | MCP configuration | `plugins/hypercolab/.mcp.json` | Connects to the hosted staging HyperColab MCP over HTTP |
 | Skill | `plugins/hypercolab/skills/hypercolab/` | Defines join, sync, claim, progress, activity, and completion behavior |
-| Lifecycle hooks | `plugins/hypercolab/hooks/hooks.json` | Loads project context at session start, checks ownership before writes, and spawns coordination writer at stop |
+| Lifecycle hooks | `plugins/hypercolab/hooks/hooks.json` | Prints instructions to the agent: join and sync at session start, check and claim ownership before `Edit`, `Write`, or `NotebookEdit`, and dispatch a coordination writer at stop |
 | Coordination-writer role | `plugins/hypercolab/agents/coordination-writer.md` | Bounded contract for delegated timeline maintenance |
 
 ### MCP tool reference
 
 | Tool | Purpose |
 | --- | --- |
-| `colab_join` | Join the project associated with the current Git repository and publish the work goal |
-| `colab_sync` | Retrieve active sessions, ownership, recent events, and touch/do-not-touch guidance |
-| `colab_claim` | Atomically claim repository-relative files or directories before editing |
-| `colab_check` | Check create, modify, rename, or delete operations immediately before a write |
-| `colab_update` | Publish material progress, scope, status, rationale, and claim renewal |
-| `colab_finish` | Complete, release, abandon, or hand off work and release the claim |
-| `colab_log_activity` | Append a structured project event for decisions, discoveries, tests, commits, or releases |
-| `colab_timeline` | Read or search the chronological development record |
-| `colab_graph_search` | Search durable knowledge in the project-scoped graph |
+| `hm_colab_resolve` | Map a repository remote URL to a HyperColab project without joining |
+| `hm_colab_join` | Join the project associated with the current Git repository and start a coordination session |
+| `hm_colab_sync` | Retrieve active sessions, claims, touch/do-not-touch paths, and recent timeline events |
+| `hm_colab_claim` | Claim repository-relative files or directories before editing; returns approved or blocked with conflicts |
+| `hm_colab_check` | Check whether planned file operations conflict with other agents' claims, optionally auto-claiming free paths |
+| `hm_colab_update` | Report progress, refresh the claim lease, and log a timeline event |
+| `hm_colab_finish` | Finish work on a claim, release it, and record the outcome, changed files, and commits |
+| `hm_colab_activity` | Log a freeform project event such as a decision, discovery, test result, or release |
+| `hm_colab_timeline` | Query the project timeline by actor, kind, branch, path, or full-text search |
+
+These nine tools match the server's HyperColab API contract.
 
 ### Coordination lifecycle
 
@@ -320,6 +328,9 @@ The plugin connects to:
 ```text
 https://stage.hypermemory.io/colab/mcp
 ```
+
+This is the staging endpoint. Production does not serve a HyperColab MCP yet,
+so the plugin stays on staging until it does.
 
 The server supports the same OAuth flow as HyperMemory: authorization-code
 with PKCE S256, refresh tokens, and dynamic client registration. The plugin
@@ -369,15 +380,16 @@ repository-specific coordination state.
 ├── plugins/
 │   ├── hypermemory/
 │   │   ├── .claude-plugin/plugin.json  # HyperMemory manifest
-│   │   ├── .mcp.json                   # Hosted OAuth MCP connection
+│   │   ├── .mcp.json                   # Production OAuth MCP connection
 │   │   ├── agents/                     # Memory-writer role contract
 │   │   ├── assets/                     # Marketplace icon and logo
-│   │   ├── hooks/hooks.json            # Claude Code lifecycle hooks
-│   │   ├── skills/hypermemory/         # Memory workflow and references
+│   │   ├── docs/                       # Enforcement hook design notes
+│   │   ├── hooks/                      # hooks.json and its three hook scripts
+│   │   ├── skills/hypermemory/         # Memory protocol
 │   │   └── skills/memorize-full-chat/  # Whole-chat commit to the graph
 │   └── hypercolab/
 │       ├── .claude-plugin/plugin.json  # HyperColab manifest
-│       ├── .mcp.json                   # Hosted OAuth MCP connection
+│       ├── .mcp.json                   # Staging OAuth MCP connection
 │       ├── agents/                     # Coordination-writer role contract
 │       ├── assets/                     # Marketplace icon and logo
 │       ├── hooks/hooks.json            # Claude Code coordination hooks
@@ -416,14 +428,15 @@ No access token, refresh token, client secret, API key, or reviewer credential
 belongs in this repository. See [Security](SECURITY.md) for reporting and trust
 boundaries.
 
-## Hook trust and permissions
+## Hooks and permissions
 
-Plugin installation does not automatically trust bundled hooks. Users must
-review them with `/hooks`. This provides an explicit boundary around prompts
-that can invoke recall, check ownership, or spawn background agents.
+A plugin's hooks are merged with the user's and project's hooks and run as soon
+as the plugin is enabled. `/hooks` lists them read-only, labeled with their
+source. To stop a plugin's hooks, disable or uninstall the plugin.
 
-Administrators may disable hooks or restrict marketplace/MCP sources through
-managed Claude Code policy. Sub-agents inherit the active parent sandbox and
+Administrators may block plugin hooks (for example with
+`allowManagedHooksOnly`) or restrict marketplace/MCP sources through managed
+Claude Code policy. Sub-agents inherit the active parent sandbox and
 permission mode. Neither plugin expands operating-system permissions on its
 own.
 
@@ -438,7 +451,9 @@ a new session:
 /plugin update hypercolab@hypermemory-plugins
 ```
 
-Review hooks again if their definitions changed.
+HyperMemory 2.12.2 and later connect to production. Users who signed in with an
+earlier version authorized the staging server, so complete the OAuth flow again
+when prompted.
 
 ## Removing
 
@@ -505,9 +520,10 @@ whether a workspace policy blocks the server.
 
 ### Hooks do not run
 
-Open `/hooks`, locate the plugin hook source, and trust its current definition.
-Also confirm hooks are not disabled in Claude Code configuration or managed
-policy.
+Open `/hooks` and confirm the plugin's hooks are listed. If they are missing,
+confirm the plugin is enabled with `/plugin list` and start a new session. Also
+confirm hooks are not disabled in Claude Code configuration or managed policy.
+The HyperMemory hooks need `bash` and `python3` on the `PATH`.
 
 ### A HyperColab write is blocked
 
@@ -544,10 +560,10 @@ you need.
 No. HyperColab uses project-scoped knowledge and coordination. HyperMemory is
 the durable cross-conversation memory plugin. They complement one another.
 
-### Are the hooks automatically trusted?
+### Do the hooks run automatically?
 
-No. Claude Code requires explicit trust for non-managed plugin hooks, and
-changed definitions must be reviewed again.
+Yes. A plugin's hooks run whenever the plugin is enabled, unless managed policy
+blocks plugin hooks. Disable the plugin to stop them.
 
 ### Are the packaged `agents/` files automatically registered custom agents?
 
@@ -563,8 +579,9 @@ behavior.
 
 ### Is the MCP endpoint production?
 
-No. Both plugins currently target staging endpoints. Treat the package as
-pre-production until the manifests and docs are updated to production MCP URLs.
+HyperMemory, yes: it targets `https://api.hypermemory.io/mcp`. HyperColab, no:
+it still targets the staging endpoint `https://stage.hypermemory.io/colab/mcp`
+because production does not serve a HyperColab MCP yet.
 
 ## Documentation
 
