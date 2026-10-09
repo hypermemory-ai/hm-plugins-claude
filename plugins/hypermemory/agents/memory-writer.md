@@ -464,8 +464,27 @@ Allowed categories: `reasoning`, `memory`, `context`, `doc_processing`,
 `automation`, `personal`, `chatting`, `research`, `design`, `calculations`,
 `coding`, `planning`, `productivity`, `writing`, `unmatched`.
 
-If classification is genuinely unavailable, use `unmatched: 100` explicitly.
-Omit zero-weight categories, keep categories unique, verify weights total 100.
+If classification is genuinely unavailable, use `unmatched` with weight 100
+explicitly. Omit zero-weight categories, keep categories unique, verify weights
+total 100.
+
+### Segments wire shape
+
+`hm_tokens` takes `segments` as a JSON array of `{"category", "weight"}`
+objects, with `weight` an integer from 1 to 100:
+
+```json
+"segments": [
+  {"category": "coding", "weight": 70},
+  {"category": "memory", "weight": 20},
+  {"category": "context", "weight": 10}
+]
+```
+
+The TOKENS block writes segments as text (`coding 70, memory 20, context 10`);
+turn each pair into one object. Never send `segments` as a string, and never
+as an object map such as `{"coding": 70}`: the server rejects both with
+`/segments ... is not of type "array"` and the turn's usage is lost.
 
 ### OpenRouter
 

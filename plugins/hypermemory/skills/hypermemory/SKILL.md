@@ -51,7 +51,7 @@ input_tokens: <estimate>
 output_tokens: <estimate>
 total_tokens: <input + output>
 estimation_bias: low | neutral | high
-segments: <category weight, ...>   (unique categories, total exactly 100)
+segments: <category weight, ...>   (e.g. coding 70, memory 20, context 10; unique categories, total exactly 100)
 size_facts: tool_calls=<n>; large_outputs=<what, roughly how big>; reply_words=<n>
 ```
 
