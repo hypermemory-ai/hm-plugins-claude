@@ -391,8 +391,13 @@ estimate:
 
 - Copy every field the TOKENS block provides into `hm_tokens` exactly as
   given: `input_tokens`, `output_tokens`, `total_tokens`, `estimation_bias`,
-  `segments`, `ai_tool`, `provider`, `model`, `session_id`, `turn_sequence`,
+  `ai_tool`, `provider`, `model`, `session_id`, `turn_sequence`,
   `measurement_quality`. Do not re-estimate or "correct" them.
+- `segments` is the one field you convert rather than copy: the block writes
+  it as text (`coding 70, memory 20`), and `hm_tokens` takes an array of
+  `{"category", "weight"}` objects (see "Segments wire shape" below). Keep the
+  block's categories and weights; a category outside the allowed list goes to
+  the closest allowed one (deployment, testing, debugging → `coding`).
 - Estimate only the fields the block omits, using its `size_facts` and the
   guidelines below.
 - If the prompt has no TOKENS block at all, estimate every field from the

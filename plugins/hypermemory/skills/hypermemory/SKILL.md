@@ -60,7 +60,7 @@ You never see exact token counts, so estimate from what you observed this turn:
 - `input_tokens`: every model call re-reads the whole context. Take the context size (system instructions, tool definitions, CLAUDE.md, conversation so far, roughly 40,000+ before any history) and add each tool result as it arrives; the turn's input is about (number of model calls) × (context size at each call). A turn with tool use is typically 50,000–200,000.
 - `output_tokens`: reply words × 1.3, plus tool-call arguments. Typically 500–10,000.
 - `estimation_bias`: `high` when large tool outputs or many calls make undercounting likely, `low` only for a minimal turn, otherwise `neutral`.
-- `segments`: make the turn's real work the largest share (`coding`, `research`, `planning`, `writing`, ...). Use `memory` only for HyperMemory overhead and `context` only for reading. Categories are listed in the writer's Token reporting section.
+- `segments`: make the turn's real work the largest share. Use only these categories: `reasoning`, `memory`, `context`, `doc_processing`, `automation`, `personal`, `chatting`, `research`, `design`, `calculations`, `coding`, `planning`, `productivity`, `writing`, `unmatched` (deployment, testing and debugging count as `coding`). Use `memory` only for HyperMemory overhead and `context` only for reading.
 - `size_facts`: the observations your estimate rests on, so the writer and the user can check it.
 
 Do not send `cost_usd` or `uncertainty_percentage`; the server computes both.
