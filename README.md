@@ -51,7 +51,7 @@ installable Claude Code plugins:
 
 | Plugin | Current version | Purpose |
 | --- | ---: | --- |
-| **HyperMemory** | `2.13.3` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
+| **HyperMemory** | `2.14.0` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
 | **HyperColab** | `2.8.5` | Shared project context, work ownership, path claims, project timelines, and multi-agent collision prevention |
 
 The marketplace is named `hypermemory-plugins`. A marketplace is a catalog and
@@ -179,7 +179,7 @@ knowledge after the requested work is complete.
 | --- | --- | --- |
 | Plugin manifest | `plugins/hypermemory/.claude-plugin/plugin.json` | Identity, version, discovery metadata, and MCP declaration |
 | MCP configuration | `plugins/hypermemory/.mcp.json` | Connects to the hosted production MCP over HTTP |
-| Skill | `plugins/hypermemory/skills/hypermemory/` | v0.9.0 protocol — recall before every response, memory-writer dispatch with a SUMMARY and TOKENS block, and tool reference |
+| Skill | `plugins/hypermemory/skills/hypermemory/` | v0.10.0 protocol — recall before every response, memory-writer dispatch with a sectioned SUMMARY (request, user rules, decisions, findings, done, corrections, details) and TOKENS block, and tool reference |
 | Skill | `plugins/hypermemory/skills/memorize-full-chat/` | On-demand `/hypermemory:memorize-full-chat` — commits a whole conversation as one node per entity with peer cross-links |
 | Lifecycle hooks | `plugins/hypermemory/hooks/hooks.json` | At session start, adds the HyperMemory block to the repository's `CLAUDE.md` if missing (`setup-claude-md.sh`); injects the full HyperMemory skill at session start and on every prompt (`inject-skill.sh`); blocks a turn from ending without a memory-writer dispatch followed by closing text (`require-writer.py`) — see [docs/enforcement-hooks.md](plugins/hypermemory/docs/enforcement-hooks.md) |
 | Memory-writer role | `plugins/hypermemory/agents/memory-writer.md` | Bounded contract for delegated storage, timeline, and telemetry work |

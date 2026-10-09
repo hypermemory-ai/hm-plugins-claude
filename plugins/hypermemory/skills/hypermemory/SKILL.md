@@ -1,6 +1,6 @@
 ---
 name: hypermemory
-version: 0.9.0
+version: 0.10.0
 description: >-
   MANDATORY on every message — call hm_recall before generating any response.
   On first message also call hm_get_overview. After responding, dispatch the
@@ -38,7 +38,13 @@ The writer cannot see your turn. It reports tokens only from what you hand it, s
 
 ```
 SUMMARY:
-<what the user asked, what you did, what you found or decided>
+Request: <what the user asked, in their words>
+Rules the user stated: <each standing rule or preference, close to verbatim, with its scope; "none">
+Decisions: <each one: chosen / rejected / why>
+Findings and open risks: <one per line, each something a later session must know>
+Done: <what changed, where, and how to undo it>
+Corrections: <anything earlier memory got wrong, with the evidence; "none">
+Details: <commit hashes, IDs, paths, hosts, ports — only here, never in the lines above>
 
 TOKENS:
 session_id: <this session's id>
@@ -54,6 +60,8 @@ estimation_bias: low | neutral | high
 segments: <category weight, ...>   (e.g. coding 70, memory 20, context 10; unique categories, total exactly 100)
 size_facts: tool_calls=<n>; large_outputs=<what, roughly how big>; reply_words=<n>
 ```
+
+The writer turns each SUMMARY line into its own memory, so keep the lines apart. A rule the user stated goes under "Rules the user stated", even when you mention it while telling what you did. A risk you found goes under "Findings and open risks", not inside the story of the fix. When this turn proved an earlier memory wrong, say so under "Corrections".
 
 You never see exact token counts, so estimate from what you observed this turn:
 

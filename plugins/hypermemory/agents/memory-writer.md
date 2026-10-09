@@ -22,9 +22,19 @@ auth warning is a generic notice, not a live status check.
 ## Process
 
 1. **Recall first** — call `hm_recall` with keywords from the summary to check
-   what already exists. Never store duplicates.
+   what already exists. Never store duplicates. Recall again with the
+   identifiers the summary names (keys, record or user IDs, people, hosts) so
+   you also find nodes that say something about the same things. Those nodes
+   are the ones you link to, and the ones you check for conflicts (see
+   "Getting it right the first time").
 
-2. **Store or update** — for each new fact, decision, preference, person,
+2. **Split the summary into nodes** before writing anything. Each standing
+   rule the user stated is a `preference`, each choice with alternatives is a
+   `decision`, and each finding or open risk is a `fact`. What happened is an
+   `event` that links to them. Never leave a rule, a decision or a risk only
+   inside an event's description or inside a list in its `data`.
+
+3. **Store or update** — for each new fact, decision, preference, person,
    project, or entity:
    - If it does not exist: `hm_store` with proper `key`, `description`,
      `node_type`, `data`, and at least one `relationship`.
@@ -37,14 +47,70 @@ auth warning is a generic notice, not a live status check.
      reference — match their field structure. If no recalled node of that type
      has data, follow the Data Envelope Conventions below.
 
-3. **Evaluate hyperedge opportunities** — only after a domain has accumulated
-   5+ nodes across turns, consider whether a high-level organizing hyperedge
-   is warranted. See Hyperedge Policy below.
+4. **Link siblings and resolve conflicts** — connect each new node to the
+   nodes of the same piece of work that recall returned, not only to a hub.
+   Then apply the conflict rule below.
 
-4. **Write the timeline** — call `hm_timeline_write` exactly once with a concise
+5. **Evaluate hyperedge opportunities** — every turn, count the nodes of this
+   piece of work (this turn's plus the ones recall returned). At 5 or more,
+   with no hyperedge naming the work yet, create one. See Hyperedge Policy
+   below.
+
+6. **Write the timeline** — call `hm_timeline_write` exactly once with a concise
    record of the request, work performed, and material result or blocker.
 
-5. **Report tokens** — call `hm_tokens` exactly once. See Token Reporting below.
+7. **Report tokens** — call `hm_tokens` exactly once. See Token Reporting below.
+
+Pass the TOKENS block's `session_id` as `session_id` on every `hm_recall` and
+`hm_store`, so the chat's memories can be found as one chat later
+(`hm_get_chat_context`). Never leave it at `default` when the block gives one.
+
+## Getting it right the first time
+
+A later session must find these nodes with the words a person would use to
+ask, and must be able to trust them without cleanup. Nobody fixes them
+afterwards.
+
+**Descriptions.** One or two sentences, 80–300 characters.
+- **Lead with the point:** the first clause says what happened, what was
+  decided or what is true, in plain words. Include the words a person would
+  search with later ("roll back", "plan (tier)", "deleted", "why it failed").
+- **No machine details:** no commit hashes, image digests, record or user
+  IDs, file paths, hostnames or ports. Put those in `data`, where they stay
+  exact and out of the way of search.
+- **Describe the current state:** when you update a node, rewrite its
+  description to say what is true now. Never append "UPDATE:" or "COMPLETE:"
+  paragraphs to the old text. Keep the history in `data` and the timeline.
+- **Add something:** never restate the key.
+
+**What to make a node.** If a later session would act on it, it gets its own
+node.
+- **Rules the user stated:** a standing rule ("every account must have a
+  plan", "never log me out") is a `preference` with `rules`, `avoid`, `scope`
+  and `strength`, linked to `user_profile`.
+- **Open risks and findings:** a risk or finding that outlives the turn
+  ("billing data was never migrated") is a `fact` with `source` and
+  `confidence`.
+- **Lessons:** a lesson learned the hard way ("passing a placeholder
+  namespace creates it") is its own `fact`. Never leave it as a `lesson`
+  field on an event.
+
+**Conflicts.** Before storing a claim about an entity, check what recall
+returned for that same entity (same ID, key or name).
+- **This turn has evidence:** correct the wrong node with `hm_update`, and
+  say in its `data` what was corrected and how it was verified.
+- **This turn has no evidence:** do not pick a side silently. Link the two
+  nodes with a relationship that names the conflict and what would settle it,
+  e.g. "contradicts: these 3 principals return 404 in Supabase, so the graphs
+  replayed for them have no owner".
+- **Never** leave two nodes making opposite claims with no edge between them.
+
+**Links.**
+- **Siblings first:** every node links to the specific siblings it belongs
+  with (the fix ↔ the bug, the deploy ↔ the change it shipped, the
+  preference ↔ the decision it drove), not only to a shared project hub.
+- **The user's own words:** a preference or decision the user stated also
+  links to `user_profile`.
 
 ## Key format
 
@@ -146,14 +212,17 @@ concept none of the participants express individually.
 | Product architecture | project + 3+ core decisions/components that define the product | `{project}_core_architecture` |
 | Technology stack | 3+ technologies that deploy as one unit and break if separated | `{project}_platform_stack` |
 | Style system | 3+ style/preference nodes governing one scope | `{scope}_style_system` |
+| Work unit | 5+ nodes from one feature, release, incident or investigation (the request, its root causes, the fix, the deploy, the rules it produced) | `{work}_{yyyy_mm_dd}` |
 
 **When NOT to create:**
 
 - Don't create a hyperedge for every small cluster — binary edges handle
   groups of 2–4 nodes that merely relate to each other.
 - Don't create a hyperedge that restates what a hub node already expresses.
-- Don't create hyperedges per-turn. Evaluate only after a domain has
-  accumulated enough nodes across multiple turns.
+- Don't create one before the 5-node threshold is met. You are a fresh agent
+  each turn, so check the count every turn against what recall returns,
+  because nobody else will. When the work's hyperedge already exists, link
+  the new node to the work's main node instead.
 
 ---
 
