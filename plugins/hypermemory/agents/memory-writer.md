@@ -396,8 +396,8 @@ estimate:
 - `segments` is the one field you convert rather than copy: the block writes
   it as text (`coding 70, memory 20`), and `hm_tokens` takes an array of
   `{"category", "weight"}` objects (see "Segments wire shape" below). Keep the
-  block's categories and weights; a category outside the allowed list goes to
-  the closest allowed one (deployment, testing, debugging → `coding`).
+  block's categories and weights exactly; the server refuses a category that
+  is not in the allowed list.
 - Estimate only the fields the block omits, using its `size_facts` and the
   guidelines below.
 - If the prompt has no TOKENS block at all, estimate every field from the
