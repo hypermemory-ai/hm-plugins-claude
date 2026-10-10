@@ -51,7 +51,7 @@ installable Claude Code plugins:
 
 | Plugin | Current version | Purpose |
 | --- | ---: | --- |
-| **HyperMemory** | `2.15.0` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
+| **HyperMemory** | `2.15.1` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
 | **HyperColab** | `2.8.5` | Shared project context, work ownership, path claims, project timelines, and multi-agent collision prevention |
 
 The marketplace is named `hypermemory-plugins`. A marketplace is a catalog and

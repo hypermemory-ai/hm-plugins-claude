@@ -296,7 +296,16 @@ from recall that the work already has one. Before creating a hyperedge:
    hyperedge. Create the replacement with `hm_add_relationships` (same
    label, every old participant plus the new ones, a description that is
    true now), then delete the old one with `hm_forget` and its `id` as
-   `edge_id`. Only delete it after the replacement is stored.
+   `edge_id`. A hyperedge's identity is its label plus its participants: the
+   same label over the same participants is the same hyperedge (the call
+   replays it, or rejects a different description). So:
+   - Delete the old one only when the call created the replacement with an
+     `id` different from the old `id`. If it replayed, returned the old `id`
+     or an error, do not delete anything.
+   - When the participants stay the same and only the description is out of
+     date, give the replacement today's date in its label
+     (`{work}_{yyyy_mm_dd}` with today's date), so it is a new hyperedge,
+     then delete the old one.
 5. If two or more hyperedges already cover the same work, merge them the
    same way into one and delete the others. "The same work" means the same
    investigation, feature or incident: most participants shared, and the
