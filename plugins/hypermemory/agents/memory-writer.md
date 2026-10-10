@@ -38,9 +38,14 @@ auth warning is a generic notice, not a live status check.
    project, or entity:
    - If it does not exist: `hm_store` with proper `key`, `description`,
      `node_type`, `data`, and at least one `relationship`.
-   - If it exists but needs correction or expansion: `hm_update`.
+   - If it exists but needs correction or expansion: `hm_update`. On a node,
+     `data` is **replaced as a whole**: read the node with `hm_get_nodes`
+     first and send its full `data` object with your changes, or every field
+     you leave out is lost. On an edge, `data` fields are merged.
    - If it is wrong: `hm_forget`.
    - To update a single edge's description or data: `hm_update` with `edge_id`.
+     The label you see as `relationship` is `data.semantic_relationship`; to
+     reword it, send both `description` and `data.semantic_relationship`.
    - To delete a single edge without removing its nodes: `hm_forget` with `edge_id`.
    - **Data is expected.** Every `hm_store` and `hm_update` should include a
      `data` payload. Use recalled nodes of the same type as the schema
@@ -55,6 +60,13 @@ auth warning is a generic notice, not a live status check.
    with the subject alone. Rewrite every node of that work whose description
    or `data.status` still asserts it, and every edge label and work hyperedge
    description that does (see "Getting it right the first time").
+   - **What counts:** present-tense claims and open items ("is", "now",
+     "awaiting", "until X decides", `data.status`, `data.open`, `data.remaining`).
+     An event's past-tense account of what happened stays as written; only
+     its present-tense claims and open items are rewritten.
+   - **Existing keys with a status word** (`…_proposed`, `…_pending`) stay:
+     a key cannot change and re-storing under a new key duplicates the node.
+     Make its description and `data.status` say the current state.
 
 5. **Link siblings and resolve conflicts** — connect each new node to the
    nodes of the same piece of work that recall returned, not only to a hub.
@@ -118,7 +130,9 @@ returned for that same entity (same ID, key or name). Before storing a
 decision, also recall the user's standing preferences on its scope (the
 system, page, API or behaviour it changes): a new decision can break an old
 rule without naming the same entity ("no rate limits for the dashboard API"
-against a new dashboard concurrency cap).
+against a new dashboard concurrency cap). Older rules are not always typed
+`preference`, so recall the scope's words with rule words ("never", "always",
+"no … period", "must") and check every node type that comes back.
 - **This turn has evidence:** correct the wrong node with `hm_update`, and
   say in its `data` what was corrected and how it was verified.
 - **This turn has no evidence:** do not pick a side silently. Link the two
@@ -148,7 +162,7 @@ against a new dashboard concurrency cap).
 `{type}_{name}` — e.g. `decision_jwt_auth`, `person_alice`, `tech_redis`.
 
 Keys are permanent, so name the subject, never its status: no `_proposed`,
-`_pending`, `_pending_ken`, `_recommended`, `_awaiting`, `_draft` or `_wip`.
+`_pending`, `_pending_approval`, `_recommended`, `_awaiting`, `_draft` or `_wip`.
 Write `decision_usage_summary_index_read`, not
 `decision_usage_query_rewrite_proposed`; the status lives in `data.status`.
 
@@ -267,8 +281,11 @@ concept none of the participants express individually.
 from recall that the work already has one. Before creating a hyperedge:
 
 1. Call `hm_get_nodes` on two or three of the work's recalled nodes (the
-   decision, the main event or finding) with `include_relationships=true`
-   and `participant_limit=100`, and read each node's `hyperedges`.
+   decision, the main event or finding) with `include_relationships=true`,
+   `relationship_detail="full"` and `participant_limit=100`, and read each
+   node's `hyperedges` (`id`, `relationship`, `description`,
+   `participant_keys`). The default summary detail lists only five
+   participants.
 2. A hyperedge there that names the same work (same subject or label stem,
    same period) is the work's hyperedge. Never create another one with that
    label or that subject.
@@ -281,11 +298,16 @@ from recall that the work already has one. Before creating a hyperedge:
    true now), then delete the old one with `hm_forget` and its `id` as
    `edge_id`. Only delete it after the replacement is stored.
 5. If two or more hyperedges already cover the same work, merge them the
-   same way into one and delete the others.
+   same way into one and delete the others. "The same work" means the same
+   investigation, feature or incident: most participants shared, and the
+   descriptions tell the same story. A neighbouring piece of work with its
+   own hyperedge (a fix inside a larger investigation, a later release)
+   keeps its own; merge only what this turn's work belongs to.
 
 The description names the joint fact in searchable words ("why recall
 failed under load after the rerank deploy and how it was fixed: …"), never
-"work unit: everything about X".
+"work unit: everything about X". It follows the node description rules:
+80–300 characters, the point first, the user's words, no machine details.
 
 ---
 
