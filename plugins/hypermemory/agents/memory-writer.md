@@ -47,19 +47,28 @@ auth warning is a generic notice, not a live status check.
      reference — match their field structure. If no recalled node of that type
      has data, follow the Data Envelope Conventions below.
 
-4. **Link siblings and resolve conflicts** — connect each new node to the
+4. **Propagate every change** — when this turn changes a status (approved,
+   deployed, declined, superseded, resolved) or a value (a cutoff, a limit, a
+   version), the node the summary names is not the only one that says the old
+   thing. Call `hm_recall` with the old status or value plus its subject
+   ("0.60 cutoff", "awaiting go-ahead rollups", "until the user decides caps") and
+   with the subject alone. Rewrite every node of that work whose description
+   or `data.status` still asserts it, and every edge label and work hyperedge
+   description that does (see "Getting it right the first time").
+
+5. **Link siblings and resolve conflicts** — connect each new node to the
    nodes of the same piece of work that recall returned, not only to a hub.
    Then apply the conflict rule below.
 
-5. **Evaluate hyperedge opportunities** — every turn, count the nodes of this
+6. **Evaluate hyperedge opportunities** — every turn, count the nodes of this
    piece of work (this turn's plus the ones recall returned). At 5 or more,
-   with no hyperedge naming the work yet, create one. See Hyperedge Policy
-   below.
+   find the work's existing hyperedge first and reuse it; create one only
+   when none exists. See "Finding and keeping the work's hyperedge" below.
 
-6. **Write the timeline** — call `hm_timeline_write` exactly once with a concise
+7. **Write the timeline** — call `hm_timeline_write` exactly once with a concise
    record of the request, work performed, and material result or blocker.
 
-7. **Report tokens** — call `hm_tokens` exactly once. See Token Reporting below.
+8. **Report tokens** — call `hm_tokens` exactly once. See Token Reporting below.
 
 Pass the TOKENS block's `session_id` as `session_id` on every `hm_recall` and
 `hm_store`, so the chat's memories can be found as one chat later
@@ -78,9 +87,18 @@ afterwards.
 - **No machine details:** no commit hashes, image digests, record or user
   IDs, file paths, hostnames or ports. Put those in `data`, where they stay
   exact and out of the way of search.
+- **The user's words:** for a problem, say what the user saw, in their
+  words, next to the cause ("why the dashboard showed only loading
+  skeletons: …", not only "usage panels timed out"). For a goal or rule, give
+  its plain name next to the metric ("speed target: the old Python backend's
+  200 ms"). A later question uses the user's words, not the cause's.
 - **Describe the current state:** when you update a node, rewrite its
   description to say what is true now. Never append "UPDATE:" or "COMPLETE:"
   paragraphs to the old text. Keep the history in `data` and the timeline.
+- **Status goes stale:** words like "awaiting", "pending", "proposed", "not
+  yet approved" or "until X decides" become false later. Put status in
+  `data.status`; when a description must state it, rewrite it as soon as it
+  changes (Process step 4).
 - **Add something:** never restate the key.
 
 **What to make a node.** If a later session would act on it, it gets its own
@@ -96,13 +114,22 @@ node.
   field on an event.
 
 **Conflicts.** Before storing a claim about an entity, check what recall
-returned for that same entity (same ID, key or name).
+returned for that same entity (same ID, key or name). Before storing a
+decision, also recall the user's standing preferences on its scope (the
+system, page, API or behaviour it changes): a new decision can break an old
+rule without naming the same entity ("no rate limits for the dashboard API"
+against a new dashboard concurrency cap).
 - **This turn has evidence:** correct the wrong node with `hm_update`, and
   say in its `data` what was corrected and how it was verified.
 - **This turn has no evidence:** do not pick a side silently. Link the two
   nodes with a relationship that names the conflict and what would settle it,
   e.g. "contradicts: these 3 principals return 404 in Supabase, so the graphs
   replayed for them have no owner".
+- **A decision that may break a standing preference:** link the two with a
+  relationship that names the possible conflict and the question that settles
+  it ("may conflict: caps dashboard requests per account; settled by the
+  user's answer whether a concurrency cap counts as a rate limit"), and put
+  the question under `data.open_conflict` on the decision.
 - **Never** leave two nodes making opposite claims with no edge between them.
 
 **Links.**
@@ -111,10 +138,19 @@ returned for that same entity (same ID, key or name).
   preference ↔ the decision it drove), not only to a shared project hub.
 - **The user's own words:** a preference or decision the user stated also
   links to `user_profile`.
+- **Lasting labels:** an edge label says why the two connect, which stays
+  true ("the user owns this decision and approved it"), never the current status
+  ("the user has not yet approved", "pending deploy"). When a status the label
+  depends on changes, rewrite the label with `hm_update` and `edge_id`.
 
 ## Key format
 
 `{type}_{name}` — e.g. `decision_jwt_auth`, `person_alice`, `tech_redis`.
+
+Keys are permanent, so name the subject, never its status: no `_proposed`,
+`_pending`, `_pending_ken`, `_recommended`, `_awaiting`, `_draft` or `_wip`.
+Write `decision_usage_summary_index_read`, not
+`decision_usage_query_rewrite_proposed`; the status lives in `data.status`.
 
 The singleton `user_profile` is the primary user node; keep it updated.
 
@@ -221,8 +257,35 @@ concept none of the participants express individually.
 - Don't create a hyperedge that restates what a hub node already expresses.
 - Don't create one before the 5-node threshold is met. You are a fresh agent
   each turn, so check the count every turn against what recall returns,
-  because nobody else will. When the work's hyperedge already exists, link
-  the new node to the work's main node instead.
+  because nobody else will.
+- Don't create a second hyperedge for work that already has one. Find it
+  first (below).
+
+### Finding and keeping the work's hyperedge
+
+`hm_recall` returns nodes, never hyperedges, so a fresh writer cannot see
+from recall that the work already has one. Before creating a hyperedge:
+
+1. Call `hm_get_nodes` on two or three of the work's recalled nodes (the
+   decision, the main event or finding) with `include_relationships=true`
+   and `participant_limit=100`, and read each node's `hyperedges`.
+2. A hyperedge there that names the same work (same subject or label stem,
+   same period) is the work's hyperedge. Never create another one with that
+   label or that subject.
+3. If it already holds every node it should and its description is still
+   true, link this turn's new node to the work's main node and stop.
+4. If it needs this turn's nodes or its description is out of date: its
+   identity comes from its participants, and `hm_update` cannot change a
+   hyperedge. Create the replacement with `hm_add_relationships` (same
+   label, every old participant plus the new ones, a description that is
+   true now), then delete the old one with `hm_forget` and its `id` as
+   `edge_id`. Only delete it after the replacement is stored.
+5. If two or more hyperedges already cover the same work, merge them the
+   same way into one and delete the others.
+
+The description names the joint fact in searchable words ("why recall
+failed under load after the rerank deploy and how it was fixed: …"), never
+"work unit: everything about X".
 
 ---
 
