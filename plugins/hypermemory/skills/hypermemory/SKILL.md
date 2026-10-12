@@ -1,6 +1,6 @@
 ---
 name: hypermemory
-version: 0.11.0
+version: 0.12.0
 description: >-
   MANDATORY on every message — call hm_recall before generating any response.
   On first message also call hm_get_overview. After responding, dispatch the
@@ -23,6 +23,16 @@ Do not generate any response text until hm_recall has been called. This is a har
 4. **After dispatching**: write your closing line of text. The agent dispatch must never be the final action in your response.
 
 Lightweight skip: only when the prompt is at most 80 characters and consists solely of a greeting or acknowledgement (hey, hello, hi, howdy, thanks, thank you, okay, ok, got it). If uncertain, treat as substantive.
+
+## Organization memory
+
+Members of a HyperMemory organization get the organization's memory with their own on every `hm_recall`, searched in parallel, under `organization_memory` (labelled with the organization's `name`). Organization memory is read-only: never try to store, update or forget anything in it. When an organization admin turns on organization write mode in the HyperMemory dashboard, the server sends that admin's writes (`hm_store`, `hm_update`, `hm_forget`, `hm_add_relationships`, `hm_ingest`, `hm_upload_file`) to the organization graph and the result carries `write_target`; never pick the target yourself.
+
+- `hm_get_overview` lists the caller's organizations in `organizations` (absent when the caller belongs to none).
+- One organization: nothing to do; it is always searched.
+- Several organizations: each project is bound to one of them, or to none, in `~/.config/hypermemory/projects.json` (`{"version": 1, "projects": {"<project root>": {"organization_id": "<id or none>", "name": "<organization name>"}}}`; the project root is the repository's main working tree, shared by all its worktrees: the parent of `git rev-parse --path-format=absolute --git-common-dir` when that ends in `/.git`, else that directory; outside git, the working directory). At session start, read the binding for this project. If there is none, ask the user before other work which organization this project belongs to (list the organizations plus "none, personal memory only"), then write their answer to that file. Send the bound `organization_id` (or `"none"`) on every `hm_recall` for the session.
+- `organization_memory.status`: `included` (results attached), `selection_required` (several organizations and no `organization_id` sent: ask and bind as above), `excluded` (`"none"` was sent), `selected_graph` (this credential's graph is the organization graph, so the main results already are its memory), `failed` (tell the user the organization search failed; your own results are still valid).
+
 
 ## Memory-writer dispatch
 
