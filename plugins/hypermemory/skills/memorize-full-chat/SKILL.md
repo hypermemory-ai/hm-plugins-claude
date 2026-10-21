@@ -1,6 +1,6 @@
 ---
 name: memorize-full-chat
-version: 0.13.0
+version: 0.13.1
 description: >-
   Commit an entire conversation to HyperMemory at full fidelity — every
   entity, fact, figure, decision, source, and correction from the first turn

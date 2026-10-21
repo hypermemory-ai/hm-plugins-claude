@@ -1,6 +1,6 @@
 ---
 name: hypermemory
-version: 0.13.0
+version: 0.13.1
 description: >-
   MANDATORY on every message — call hm_recall before generating any response.
   On first message also call hm_get_overview. After responding, dispatch the
@@ -26,7 +26,7 @@ Lightweight skip: only when the prompt is at most 80 characters and consists sol
 
 ## Organization memory
 
-Members of a HyperMemory organization get the organization's memory with their own on every `hm_recall`, searched in parallel, under `organization_memory` (labelled with the organization's `name`). Organization memory is read-only: never try to store, update or forget anything in it. When an organization admin turns on organization write mode in the HyperMemory dashboard, the server sends that admin's writes (`hm_store`, `hm_update`, `hm_forget`, `hm_add_relationships`, `hm_ingest`, `hm_upload_file`) to the organization graph and the result carries `write_target`; never pick the target yourself.
+Members of a HyperMemory organization get the organization's memory with their own on every `hm_recall`, searched in parallel, under `organization_memory` (labelled with the organization's `name`). Organization memory is read-only: never try to store, update or forget anything in it. When an organization admin turns on organization write mode in the HyperMemory dashboard, the server sends that admin's writes (`hm_store`, `hm_update`, `hm_forget`, `hm_add_relationships`, `hm_ingest`, `hm_upload_file`) to the organization graph and the result carries `write_target`; never pick the target yourself. To read what was written there, send that organization's `organization_id` to `hm_get_nodes`, `hm_find_related`, `hm_get_overview` or `hm_list_orphans` (the result carries `read_target`); without it they read your own graph. A key or relationship endpoint "not found" during write mode means it is missing from the organization graph: create it there first.
 
 - `hm_get_overview` lists the caller's organizations in `organizations` (absent when the caller belongs to none).
 - One organization: nothing to do; it is always searched.
