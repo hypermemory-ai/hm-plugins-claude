@@ -624,11 +624,13 @@ Make the substantive activity the largest share:
 - Use other categories only when that work actually occurred.
 
 Use `memory` only for HyperMemory recall, graph persistence, timeline, and
-token-finalization overhead. Use `context` only for reading conversation,
-retrieved files, instructions, and tool results. Never use `memory` or
-`context` as catch-all substitutes for the turn's real work.
+token-finalization overhead. Reading the conversation, files, instructions
+and tool results belongs to the work it served: there is no `context`
+category and the server refuses it. Never send a fixed split such as memory
+10 / context 90, and never use `memory` as a catch-all substitute for the
+turn's real work.
 
-Allowed categories: `reasoning`, `memory`, `context`, `doc_processing`,
+Allowed categories: `reasoning`, `memory`, `doc_processing`,
 `automation`, `personal`, `chatting`, `research`, `design`, `calculations`,
 `coding`, `planning`, `productivity`, `writing`, `unmatched`.
 
@@ -645,11 +647,11 @@ objects, with `weight` an integer from 1 to 100:
 "segments": [
   {"category": "coding", "weight": 70},
   {"category": "memory", "weight": 20},
-  {"category": "context", "weight": 10}
+  {"category": "writing", "weight": 10}
 ]
 ```
 
-The TOKENS block writes segments as text (`coding 70, memory 20, context 10`);
+The TOKENS block writes segments as text (`coding 70, memory 20, writing 10`);
 turn each pair into one object. Never send `segments` as a string, and never
 as an object map such as `{"coding": 70}`: the server rejects both with
 `/segments ... is not of type "array"` and the turn's usage is lost.
