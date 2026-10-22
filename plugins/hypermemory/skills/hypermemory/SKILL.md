@@ -1,6 +1,6 @@
 ---
 name: hypermemory
-version: 0.13.1
+version: 0.13.2
 description: >-
   MANDATORY on every message — call hm_recall before generating any response.
   On first message also call hm_get_overview. After responding, dispatch the
