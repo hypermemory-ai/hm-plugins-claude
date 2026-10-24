@@ -1,13 +1,18 @@
 {
-  "description": "HyperMemory plugin \u2014 skill injected every prompt, writer dispatch required at stop",
+  "description": "HyperMemory plugin \u2014 CLAUDE.md setup and nightly update task at session start, skill injected every prompt, writer dispatch required at stop",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/setup-claude-md.sh\"",
-            "timeout": 5
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/setup-claude-md.py\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/setup-nightly-update.py\" \"${CLAUDE_PLUGIN_ROOT}\"",
+            "timeout": 10
           },
           {
             "type": "command",
