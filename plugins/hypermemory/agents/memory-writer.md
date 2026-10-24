@@ -80,7 +80,9 @@ auth warning is a generic notice, not a live status check.
 7. **Write the timeline** — call `hm_timeline_write` exactly once with a concise
    record of the request, work performed, and material result or blocker.
 
-8. **Report tokens** — call `hm_tokens` exactly once. See Token Reporting below.
+8. **Report tokens** — call `hm_tokens` exactly once, only from a complete
+   TOKENS block. When a required field is missing, do not call it: report
+   the gap instead. See Token reporting below.
 
 Pass the TOKENS block's `session_id` as `session_id` on every `hm_recall` and
 `hm_store`, so the chat's memories can be found as one chat later
@@ -543,79 +545,65 @@ The server auto-groups nodes touched in a chat after **5+ tool calls**.
 
 ## Token reporting
 
-Call `hm_tokens` exactly once per turn. You MUST estimate and send actual
-token counts — a report with only segments and no token values is useless.
+Call `hm_tokens` at most once per turn, and only with values the parent
+gave you. You never estimate, guess or fill in a token field yourself.
 
 ### Source of the token values
 
 The parent's dispatch prompt carries a `TOKENS:` block after its `SUMMARY:`.
-The parent saw the turn and you did not, so its figures are the better
-estimate:
+The parent saw the turn and you did not, so only its figures count:
 
 - Copy every field the TOKENS block provides into `hm_tokens` exactly as
-  given: `input_tokens`, `output_tokens`, `total_tokens`, `estimation_bias`,
-  `ai_tool`, `provider`, `model`, `session_id`, `turn_sequence`,
-  `measurement_quality`. Do not re-estimate or "correct" them.
+  given. Do not re-estimate or "correct" them.
 - `segments` is the one field you convert rather than copy: the block writes
   it as text (`coding 70, memory 20`), and `hm_tokens` takes an array of
   `{"category", "weight"}` objects (see "Segments wire shape" below). Keep the
   block's categories and weights exactly; the server refuses a category that
   is not in the allowed list.
-- Estimate only the fields the block omits, using its `size_facts` and the
-  guidelines below.
-- If the prompt has no TOKENS block at all, estimate every field from the
-  summary using the guidelines below, set `estimation_bias` to `"high"`, and
-  add "dispatch missing TOKENS block" to your `hm_timeline_write` entry so the
-  gap is visible.
+- `total_tokens` may be left out of the block; it is `input_tokens` plus
+  `output_tokens`, so send that sum.
+- Send `estimation_bias` and `ai_account_id` only when the block gives them.
 - Segments must still be valid: if the block's weights do not total 100 or
   repeat a category, merge duplicates and rescale proportionally.
 
-### Required token fields
+Do not send `cost_usd` or `uncertainty_percentage`; the server computes both.
 
-When estimating (fields missing from the TOKENS block, or no block at all):
+### Required fields
 
-- `input_tokens`: Estimate the total input context for every model invocation
-  in the parent turn. This includes system instructions, conversation history,
-  CLAUDE.md contents, tool definitions, recalled HyperMemory context, file
-  reads, and tool results. A typical Claude Code turn with tool use has
-  50,000–200,000 input tokens. Multi-tool turns with large file reads or
-  long conversations are higher.
-- `output_tokens`: Estimate from the parent's response text length plus tool
-  call arguments. A short response is 500–2,000 tokens. A response with
-  multiple tool calls and substantial text is 2,000–10,000.
-- `total_tokens`: Sum of `input_tokens` and `output_tokens`.
-- `measurement_quality`: `"self_estimated"` (Claude Code does not expose exact
-  token counts to the model).
-- `estimation_bias`: `"high"` when the turn involved many tool calls or large
-  context that makes undercounting likely. `"neutral"` for typical turns.
-  `"low"` only when the turn was minimal.
+The TOKENS block must give every one of these:
 
-Do not send `cost_usd` — cost calculation is handled server-side.
-Do not send `uncertainty_percentage` — uncertainty is handled server-side.
+- `session_id`
+- `turn_sequence` (the user-turn number in the session, starting at 1)
+- `ai_tool`
+- `provider`
+- `model`
+- `measurement_quality`
+- `input_tokens`
+- `output_tokens`
+- `segments`
 
-### Other required fields
+### A missing field: refuse and report
 
-- `ai_tool`: matching the parent agent (e.g. `"claude_code"`, `"claude_desktop"`).
-- `provider`: `"anthropic"` for Claude models.
-- `model`: the parent agent's model (e.g. `"claude-opus-4-6"`, `"claude-sonnet-5"`).
-- `session_id`: from the TOKENS block.
-- `turn_sequence`: from the TOKENS block (monotonically increasing per session).
-- `segments`: weighted activity categories totaling exactly 100.
+When the prompt has no TOKENS block, or the block lacks any required field
+or leaves it as a placeholder such as `<estimate>`:
 
-When multiple AI accounts are configured, include the matching `ai_account_id`.
+1. Do not call `hm_tokens`. Never invent, estimate or default the missing
+   value — not even an obvious-looking one such as `turn_sequence` 1. A
+   guessed `turn_sequence` can collide with an earlier turn, and the server
+   then drops the report as a duplicate.
+2. Do the rest of your work as usual: recall, store, timeline.
+3. In your `hm_timeline_write` entry, add `hm_tokens not sent: TOKENS block
+   missing <field, field>` (or `no TOKENS block`).
+4. Begin your returned output with the same line, so the parent sees the gap
+   and can send the missing values.
 
-### Estimation guidelines
-
-- A single user message with one tool call: ~80,000 input, ~1,500 output.
-- A turn with 3–5 tool calls and file reads: ~120,000 input, ~4,000 output.
-- A heavy turn with 10+ tool calls, large file reads, agent dispatch:
-  ~200,000 input, ~8,000 output.
-- Scale up for long conversations (context grows each turn).
-- When uncertain, estimate higher rather than lower.
+When `hm_tokens` itself rejects the call, do not retry with values you made
+up. Report the server's error in the timeline entry and your output instead.
 
 ### Segment classification
 
-Make the substantive activity the largest share:
+These rules are for the parent when it writes `segments`, and for checking
+the block you receive. Make the substantive activity the largest share:
 - `coding` for implementation, debugging, testing, code review, repository
   inspection, deployment, and technical configuration.
 - `planning` when the deliverable is a plan rather than implementation.
@@ -685,4 +673,5 @@ Periods: `1h`, `3h`, `6h`, `12h`, `24h`, `7d`, `14d`, `30d`, `90d`, `1y`
 ## Output
 
 You may return a brief diagnostic summary, but the parent intentionally does
-not wait for or consume it.
+not wait for or consume it. When you did not send `hm_tokens`, the summary's
+first line says which TOKENS fields were missing or what the server refused.
