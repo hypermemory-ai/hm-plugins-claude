@@ -51,7 +51,7 @@ installable Claude Code plugins:
 
 | Plugin | Current version | Purpose |
 | --- | ---: | --- |
-| **HyperMemory** | `2.17.0` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
+| **HyperMemory** | `2.17.1` | Persistent personal and project memory, relationship-aware recall, delegated writes, timeline logging, and token telemetry |
 | **HyperColab** | `2.8.5` | Shared project context, work ownership, path claims, project timelines, and multi-agent collision prevention |
 
 The marketplace is named `hypermemory-plugins`. A marketplace is a catalog and
@@ -179,7 +179,7 @@ knowledge after the requested work is complete.
 | --- | --- | --- |
 | Plugin manifest | `plugins/hypermemory/.claude-plugin/plugin.json` | Identity, version, discovery metadata, and MCP declaration |
 | MCP configuration | `plugins/hypermemory/.mcp.json` | Connects to the hosted production MCP over HTTP |
-| Skill | `plugins/hypermemory/skills/hypermemory/` | v0.13.1 protocol — recall before every response (with organization memory), memory-writer dispatch with a sectioned SUMMARY (request, user rules, decisions, findings, done, changed old → new, corrections, details) and TOKENS block, and tool reference |
+| Skill | `plugins/hypermemory/skills/hypermemory/` | v0.13.4 protocol — recall before every response (with organization memory), memory-writer dispatch with a sectioned SUMMARY (request, user rules, decisions, findings, done, changed old → new, corrections, details) and a complete TOKENS block, and tool reference |
 | Skill | `plugins/hypermemory/skills/memorize-full-chat/` | On-demand `/hypermemory:memorize-full-chat` — commits a whole conversation as one node per entity with peer cross-links |
 | Lifecycle hooks | `plugins/hypermemory/hooks/hooks.json` | At session start, adds the HyperMemory block where it is missing to the user-level `~/.claude/CLAUDE.md`, the session's project `CLAUDE.md` and the `CLAUDE.md` of every project Claude Code knows (`setup-claude-md.py`), and schedules the nightly update task through the Claude app when it is missing (`setup-nightly-update.py`); injects the full HyperMemory skill at session start and on every prompt (`inject-skill.sh`); blocks a turn from ending without a memory-writer dispatch followed by closing text (`require-writer.py`) — see [docs/enforcement-hooks.md](plugins/hypermemory/docs/enforcement-hooks.md) |
 | Nightly update task | `plugins/hypermemory/scheduled/` | The prompt of the `hypermemory-nightly-update` scheduled task (every night at midnight: update the plugin when it was installed from the command line, flag a gap between the server's skill and the plugin's, and update installed HyperMemory-published skills) and its helper `hm_skills.py`, which the setup hook keeps at `~/.claude/hypermemory/hm_skills.py`. The task runs while the Claude desktop app is open |

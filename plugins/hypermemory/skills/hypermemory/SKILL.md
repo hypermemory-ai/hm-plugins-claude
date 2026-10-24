@@ -1,6 +1,6 @@
 ---
 name: hypermemory
-version: 0.13.3
+version: 0.13.4
 description: >-
   MANDATORY on every message — call hm_recall before generating any response.
   On first message also call hm_get_overview. After responding, dispatch the
@@ -44,7 +44,7 @@ The writer handles all graph persistence (`hm_store`, `hm_update`, `hm_forget`, 
 
 ### Dispatch prompt: SUMMARY + TOKENS
 
-The writer cannot see your turn. It reports tokens only from what you hand it, so every dispatch prompt MUST contain both parts below. A dispatch without the TOKENS block is a protocol failure, the same as skipping the dispatch.
+The writer cannot see your turn. It reports tokens only from what you hand it, so every dispatch prompt MUST contain both parts below, with every TOKENS field filled in. The writer never guesses a missing field: when one is missing, or still a placeholder, it sends no token report and says which field was missing, so that turn's usage is lost. A dispatch without the TOKENS block is a protocol failure, the same as skipping the dispatch.
 
 ```
 SUMMARY:
